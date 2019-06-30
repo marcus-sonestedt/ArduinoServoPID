@@ -162,7 +162,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ArduinoMock.h" />
-    <ClInclude Include="Servo.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
