@@ -1,0 +1,9 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/.vs/Kartuino/v16
+/.vs
+/ServoPID/TestServoPID/.vs/TestServoPID/v16
+/ServoPID/TestServoPID/Debug
+/ServoPID/TestServoPID/packages/vcpkg.C.Users.marcu.source.repos.vcpkg.1.0.0
