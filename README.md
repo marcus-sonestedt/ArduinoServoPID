@@ -2,6 +2,4 @@
 
 ## ServoPid
 
-Small Arduino app to run a PID regulator to control servos.
-
-However, servos already do some PID-ing on their own. Hm.
+Small Arduino app to run a PID regulator to control four servos from analog inputs.
