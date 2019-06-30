@@ -1,6 +1,5 @@
 #ifdef _MSC_VER
 #include "ArduinoMock.h"
-#include "Servo.h"
 #else
 #include <Servo.h>
 #endif
@@ -11,7 +10,8 @@ class PID
 {
 public:
     // adjust to control the amount of "energy" that the PID integrator can store
-    static const int MaxIntegratorStore = 10;
+    static const int MaxIntegratorStore = 50;
+    static const int MaxOutput = 100;
 
     PID() {}
     PID(float p, float i, float d, float dLambda) {
@@ -24,22 +24,22 @@ public:
     }
 
     void reset() {
-        _iSum = 0.0f;
+        _integral = 0.0f;
         _prevError = 0.0f;
-        _dFiltered = 0.0f;
+        _deltaFiltered = 0.0f;
     }
 
-    // returns output [0..1]
     float regulate(float currentValue, float requestedValue, float dt)
     {
         float error = requestedValue - currentValue;
-        float errorD = (error - _prevError) / dt;
+        float errorDelta = (error - _prevError) / dt;
 
         _prevError = error;
-        _dFiltered = errorD * _dLambda + (_dFiltered * (1.0f - _dLambda));
-        _iSum = constrain(_iSum + error * dt, -MaxIntegratorStore, MaxIntegratorStore); // limit "energy" storage in integrator
+        _deltaFiltered = (errorDelta * _dLambda) + (_deltaFiltered * (1.0f - _dLambda));
+        _integral = constrain(_integral + error * dt, -MaxIntegratorStore, MaxIntegratorStore); // limit "energy" storage in integrator
 
-        return _pFactor * error + _iFactor * _iSum + _dFactor * _dFiltered;
+        float output = _pFactor * error + _iFactor * _integral + _dFactor * _deltaFiltered;
+        return constrain(output, -MaxOutput, MaxOutput);
     }
 
 private:
@@ -48,8 +48,8 @@ private:
     float _dFactor;
     float _dLambda;
 
-    float _iSum;
-    float _dFiltered;
+    float _integral;
+    float _deltaFiltered;
     float _prevError;
 };
 
