@@ -125,27 +125,46 @@ PidServo PidServos[NUM_SERVOS];
 float prevTime;
 
 void setup() {
-    // assume servos on pin 0..3 and potentiometers on 10..13
+    // assume servos on pin 3,5,6,9 and potentiometers on analog in 0,1,2,3
+    
+    float p = 3.0f;
+    float i = 1.0f;
+    float d = 0.05f;
+    float dL = 0.1f;
 
-    // unroll loop to set separate values for each servo
-    for (int i = 0; i < NUM_SERVOS; ++i)
-    {
-        PidServos[i] = PidServo(
-            i, 544, 2400, // servo pin, pwm min, pwm max
-            PID(3.0f, 1.0f, 0.05f, 0.2f), // p, i, d, d-lowpass
-            AnalogPin(i + 10, 0, 1023), // potentiometer pin, in min, in max
-            0 // offset between pot and servo [0..1]
-        );
-    }
+    PidServos[FL] = PidServo(
+        3, 544, 2400, // servo pin, pwm min, pwm max
+        PID(p, i, d, dL), // p, i, d, d-lowpass
+        AnalogPin(0, 0, 1023), // potentiometer pin, in min, in max
+        0 // offset between pot and servo [0..1]
+    );
+    PidServos[FR] = PidServo(
+        5, 544, 2400, // servo pin, pwm min, pwm max
+        PID(p, i, d, dL), // p, i, d, d-lowpass
+        AnalogPin(1, 0, 1023), // potentiometer pin, in min, in max
+        0 // offset between pot and servo [0..1]
+    );
+    PidServos[RL] = PidServo(
+        6, 544, 2400, // servo pin, pwm min, pwm max
+        PID(p, i, d, dL), // p, i, d, d-lowpass
+        AnalogPin(2, 0, 1023), // potentiometer pin, in min, in max
+        0 // offset between pot and servo [0..1]
+    );
+    PidServos[RR] = PidServo(
+        9, 544, 2400, // servo pin, pwm min, pwm max
+        PID(p, i, d, dL), // p, i, d, d-lowpass
+        AnalogPin(3, 0, 1023), // potentiometer pin, in min, in max
+        0 // offset between pot and servo [0..1]
+    );
 
     // setPoint => where we want servo to be on relative scale [0..1] (min..max)
-
     // set front wheels lower than rear
     PidServos[FL].setPoint(0.3f);
     PidServos[FR].setPoint(0.3f);
     PidServos[RL].setPoint(0.5f);
     PidServos[RR].setPoint(0.5f);
 
+    // initiate timer
     prevTime = micros() * 1e-6f;
 }
 
