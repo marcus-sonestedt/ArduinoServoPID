@@ -252,7 +252,7 @@ void HandleSerialCommand()
         {
             if (serialBuf[2] >= NUM_SERVOS)
             {
-                Serial.print(F("ERR: Invalid servo "));
+                Serial.print(F("ERR: Invalid servo number "));
                 Serial.println(serialBuf[2]);
                 return;
             }
@@ -312,6 +312,10 @@ void HandleSerialCommand()
     case Command::GetServoData:
         for (auto i = 0; i < NUM_SERVOS; ++i)
         {
+            // show only one servo if set
+            if (serialBuf[2] != i && serialBuf[2] < NUM_SERVOS)
+                continue;
+
             const auto& servo = PidServos[i];
 
             Serial.print(F("SD "));
