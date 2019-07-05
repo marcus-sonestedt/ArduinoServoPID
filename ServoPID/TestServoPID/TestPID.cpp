@@ -26,7 +26,7 @@ TEST(TestPID, RegulateScaled)
     auto process = 0.0f;
     for (auto i = 0; i < 1000; ++i) {
         const auto output = pid.regulate(process, 42.0f, 0.1f);
-        process = output * 0.5;
+        process = output * 0.5f;
     }
     
     ASSERT_FLOAT_EQ(process, 42.0f);

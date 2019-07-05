@@ -1,5 +1,11 @@
 #pragma once
 #include <vector>
+#include <string>
+#include <iostream>
+#include <sstream>
+
+// ReSharper disable once CppInconsistentNaming
+constexpr const char* F(const char* x) { return x; }
 
 // Mock globals
 
@@ -46,3 +52,42 @@ private:
 
     int _angle = 0;
 };
+
+
+class MockSerial
+{
+public:
+    // ReSharper disable CppMemberFunctionMayBeStatic
+    void begin(int baudrate) const {}
+    void end() const {}
+    // ReSharper restore CppMemberFunctionMayBeStatic
+
+    int available() const { return dataRead.size(); }
+
+    char read()
+    {
+        if (dataRead.empty())
+            return 0;
+        
+        const auto value = dataRead.back();
+        dataRead.pop_back();
+        return value;
+    }
+
+    void setMockData(const std::string& str)
+    {
+        dataRead.assign(str.rbegin(), str.rend());
+    }
+
+    template<typename T>
+    void println(T value, int format = 3) { dataWrite << value; }
+
+    template<typename T>
+    void print(T value, int format = 3) { dataWrite << value; }
+
+    std::vector<char> dataRead;
+    std::stringstream dataWrite;
+};
+
+// ReSharper disable once CppInconsistentNaming
+extern MockSerial Serial;
