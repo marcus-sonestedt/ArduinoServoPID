@@ -7,3 +7,6 @@
 /ServoPID/TestServoPID/.vs/TestServoPID/v16
 /ServoPID/TestServoPID/Debug
 /ServoPID/TestServoPID/packages/vcpkg.C.Users.marcu.source.repos.vcpkg.1.0.0
+
+**/bin
+**/obj
