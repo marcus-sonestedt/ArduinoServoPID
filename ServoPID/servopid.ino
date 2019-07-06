@@ -4,7 +4,7 @@
 #include <Servo.h>
 #endif
 
-// PID regulator, incl lowpass on D part
+// PID regulator, incl low-pass lambda filter on D part
 class PID
 {
 public:
@@ -12,9 +12,7 @@ public:
     static const int MaxIntegratorStore = 50;
     static const int MaxOutput = 100;
 
-    PID()
-    {
-    }
+    PID() = default;
 
     PID(float p, float i, float d, float dLambda)
     {
@@ -35,60 +33,56 @@ public:
 
     float regulate(float currentValue, float requestedValue, float dt)
     {
-        float error = requestedValue - currentValue;
-        float errorDelta = (error - _prevError) / dt;
+        const auto error = requestedValue - currentValue;
+        const auto errorDelta = (error - _prevError) / dt;
 
         _prevError = error;
         _deltaFiltered = (errorDelta * _dLambda) + (_deltaFiltered * (1.0f - _dLambda));
         _integral = constrain(_integral + error * dt, -MaxIntegratorStore, MaxIntegratorStore);
         // limit "energy" storage in integrator
 
-        float output = _pFactor * error + _iFactor * _integral + _dFactor * _deltaFiltered;
+        const auto output = _pFactor * error + _iFactor * _integral + _dFactor * _deltaFiltered;
         return constrain(output, -MaxOutput, MaxOutput);
     }
 
-    float _pFactor;
-    float _iFactor;
-    float _dFactor;
-    float _dLambda;
+    float _pFactor = 0;
+    float _iFactor = 0;
+    float _dFactor = 0;
+    float _dLambda = 0;
 
-    float _integral;
-    float _deltaFiltered;
-    float _prevError;
+    float _integral = 0;
+    float _deltaFiltered = 0;
+    float _prevError = 0;
 };
 
 // Analog input, with min/max settings
 class AnalogPin
 {
 public:
-    AnalogPin()
-    {
-    }
+    AnalogPin() = default;
 
     AnalogPin(int pin, int min, int max)
     {
         _pin = pin;
-        _scale = 1.0f / (max - min);
+        _scale = 1.0f / float(max - min);
         _bias = static_cast<float>(-min);
     }
 
-    float read()
+    float read() const
     {
-        int value = analogRead(_pin);
+        const auto value = float(analogRead(_pin));
         return (value * _scale) + _bias;
     }
 
-    int _pin;
-    float _bias;
-    float _scale;
+    int _pin = 0;
+    float _bias = 0;
+    float _scale = 1;
 };
 
 class PidServo
 {
 public:
-    PidServo()
-    {
-    }
+    PidServo() = default;
 
     PidServo(int servoPin, int servoMin, int servoMax, PID pid, AnalogPin analogPin)
     {
@@ -98,31 +92,31 @@ public:
         _setPoint = 0.5f;
     }
 
-    void setPoint(float setpoint)
+    void setPoint(float setPoint)
     {
-        _setPoint = setpoint;
+        _setPoint = setPoint;
     }
 
-    void run(float dt)
+    void run(const float dt)
     {
         _input = _analogPin.read();
         _output = _pid.regulate(_input, _setPoint, dt);
-        _servo.write(static_cast<int>(_output * 180.0f));
+        _servo.write(int(_output * 180.0f));
     }
 
     Servo _servo;
     PID _pid;
     AnalogPin _analogPin;
 
-    float _setPoint;
-    float _input;
-    float _output;
+    float _setPoint = 0.5f;
+    float _input = 0;
+    float _output = 0;
 };
 
 ////////////////////////////////////////////////////////////////////
 
 // numbers <-> wheel
-#define NUM_SERVOS 4
+constexpr int NUM_SERVOS = 4;
 
 PidServo PidServos[NUM_SERVOS];
 
@@ -138,29 +132,29 @@ bool enabled = true;
 void setup() {
     // assume servos on pin 3,5,6,9 and potentiometers on analog in 0,1,2,3
     
-    float p = 3.0f;
-    float i = 1.0f;
-    float d = 0.05f;
-    float dL = 0.1f;
+    const auto p = 3.0f;
+    const auto i = 1.0f;
+    const auto d = 0.05f;
+    const auto dL = 0.1f;
 
     FL = PidServo(
         3, 544, 2400, // servo pin, pwm min, pwm max
-        PID(p, i, d, dL), // p, i, d, d-lowpass
+        PID(p, i, d, dL), 
         AnalogPin(0, 0, 1023) // potentiometer pin, in min, in max
     );
     FR = PidServo(
         5, 544, 2400, // servo pin, pwm min, pwm max
-        PID(p, i, d, dL), // p, i, d, d-lowpass
+        PID(p, i, d, dL), 
         AnalogPin(1, 0, 1023) // potentiometer pin, in min, in max
     );
     RL = PidServo(
         6, 544, 2400, // servo pin, pwm min, pwm max
-        PID(p, i, d, dL), // p, i, d, d-lowpass
+        PID(p, i, d, dL),
         AnalogPin(2, 0, 1023) // potentiometer pin, in min, in max
     );
     RR = PidServo(
         9, 544, 2400, // servo pin, pwm min, pwm max
-        PID(p, i, d, dL), // p, i, d, d-lowpass
+        PID(p, i, d, dL), 
         AnalogPin(3, 0, 1023) // potentiometer pin, in min, in max
     );
 
@@ -175,21 +169,22 @@ void setup() {
     Serial.begin(115200);
 
     // initiate timer
-    prevTime = micros() * 1e-6f;
+    prevTime = 1e-6f * float(micros());
 }
 
 void loop()
 {
     // determine time step
-    float t = micros() * 1e-6f;
+    const auto t = 1e-6f * float(micros());
     dt = t - prevTime;
     prevTime = t;
 
     // regulate servos
     if (enabled)
-        for (int i = 0; i < NUM_SERVOS; ++i)
-            PidServos[i].run(dt);
+        for (auto& PidServo : PidServos)
+            PidServo.run(dt);
 
+    Serial.print("DT ");
     Serial.println(dt, 3);
 }
 
@@ -198,6 +193,7 @@ enum class Command
     NoOp,
     SetServoParamFloat,
     EnableRegulator,
+    GetNumServos,
     GetServoParams,
     GetServoData
 };
@@ -233,19 +229,20 @@ void serialEvent()
         return;
     }
 
-    auto cmdLen = serialBuf[serialLen - 1];
+    const auto cmdLen = serialBuf[serialLen - 1];
 
     // more data
     if (cmdLen != serialLen)
         return;
 
     HandleSerialCommand();
+
     serialLen = 0;
 }
 
 void HandleSerialCommand()
 {
-    switch ((Command)serialBuf[1])
+    switch (Command(serialBuf[1]))
     {
         // len, cmd, pid#, param-id, float-value[4]
     case Command::SetServoParamFloat:
@@ -258,8 +255,8 @@ void HandleSerialCommand()
             }
 
             auto& servoPid = PidServos[serialBuf[2]];
-            float value = *reinterpret_cast<float*>(serialBuf + 4);
-            switch ((ServoParam)serialBuf[3])
+            const auto value = *reinterpret_cast<float*>(serialBuf + 4);
+            switch (ServoParam(serialBuf[3]))
             {
             case ServoParam::P: servoPid._pid._pFactor = value;
                 break;
@@ -288,8 +285,13 @@ void HandleSerialCommand()
         enabled = serialBuf[1] != 0;
         break;
 
+    case Command::GetNumServos:
+        Serial.print(F("NS "));
+        Serial.print(NUM_SERVOS);
+        break;
+
     case Command::GetServoParams:
-        for (auto i = 0; i < NUM_SERVOS; ++i)
+        for (auto i = 0; i < NUM_SERVOS; ++i)  // NOLINT(modernize-loop-convert)
         {
             const auto& servo = PidServos[i];
 

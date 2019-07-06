@@ -1,7 +1,7 @@
 #pragma once
+
 #include <vector>
 #include <string>
-#include <iostream>
 #include <sstream>
 
 // ReSharper disable once CppInconsistentNaming
@@ -9,9 +9,9 @@ constexpr const char* F(const char* x) { return x; }
 
 // Mock globals
 
-extern int gMicros; 
-inline int micros() { return gMicros; }
-inline void setMockMicros(const int value) { gMicros = value;}
+extern unsigned long gMicros;
+inline unsigned long micros() { return gMicros; }
+inline void setMockMicros(const unsigned long value) { gMicros = value;}
 
 extern std::vector<int> gAnalogPins;
 inline int analogRead(const int pin) { return gAnalogPins.at(pin);}
