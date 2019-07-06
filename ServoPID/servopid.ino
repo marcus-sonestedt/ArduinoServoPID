@@ -82,6 +82,9 @@ public:
 class PidServo
 {
 public:
+    static const int MinAngle = 80;
+    static const int MaxAngle = 100;
+
     PidServo() = default;
 
     PidServo(int servoPin, int servoMin, int servoMax, PID pid, AnalogPin analogPin)
@@ -101,7 +104,7 @@ public:
     {
         _input = _analogPin.read();
         _output = _pid.regulate(_input, _setPoint, dt);
-        _servo.write(int(_output * 180.0f));
+        _servo.write(constrain(int(_output * 180.0f), MinAngle, MaxAngle));
     }
 
     Servo _servo;
@@ -110,8 +113,8 @@ public:
 
     float _setPoint = 0.5f;
     float _input = 0;
-    float _output = 0;
-};
+    float _output = 0; 
+;
 
 ////////////////////////////////////////////////////////////////////
 

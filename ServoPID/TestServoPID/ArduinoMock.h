@@ -20,7 +20,8 @@ inline void setMockAnalogRead(const int pin, const int value)
     gAnalogPins.at(pin) = value;
 }
 
-inline float constrain(const float v, const float min, const float max)
+template<typename T>
+float constrain(const T v, const T min, const T max)
 {
     if (v < min)
         return min;
