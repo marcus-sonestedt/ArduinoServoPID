@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 using ServoPIDControl.Annotations;
 
 namespace ServoPIDControl
@@ -15,6 +10,14 @@ namespace ServoPIDControl
         private string _portName = "COM3";
         private bool _enabled = true;
         private float _deltaTime;
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        public Model()
+        {
+            for(var i = 0; i < 4; ++i)
+                Servos.Add(new ServoPidModel(i));
+        }
 
         public string PortName
         {
@@ -50,8 +53,6 @@ namespace ServoPIDControl
                 OnPropertyChanged();
             }
         }
-
-        public event PropertyChangedEventHandler PropertyChanged;
 
         [NotifyPropertyChangedInvocator]
         protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)

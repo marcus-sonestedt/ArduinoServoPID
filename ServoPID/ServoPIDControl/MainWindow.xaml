@@ -15,10 +15,10 @@
             <ColumnDefinition Width="1*" />
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
-            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <CheckBox Grid.Column="0" Checked="{Binding Enabled}" x:Name="EnabledCheckBox" />
+        <CheckBox Grid.Column="0" IsChecked="{Binding Enabled}" x:Name="EnabledCheckBox" />
         <TextBox Grid.Column="1" Grid.Row="0"  Text="{Binding PortName}" x:Name="PortNameTextBox" />
         <DataGrid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
                   ItemsSource="{Binding Servos}" x:Name="ServosDataGrid" />

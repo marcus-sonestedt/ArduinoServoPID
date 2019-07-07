@@ -38,11 +38,11 @@ public:
 
         _prevError = error;
         _deltaFiltered = (errorDelta * _dLambda) + (_deltaFiltered * (1.0f - _dLambda));
-        _integral = constrain(_integral + error * dt, -MaxIntegratorStore, MaxIntegratorStore);
+        _integral = constrain(_integral + error * dt, float(-MaxIntegratorStore), float(MaxIntegratorStore));
         // limit "energy" storage in integrator
 
         const auto output = _pFactor * error + _iFactor * _integral + _dFactor * _deltaFiltered;
-        return constrain(output, -MaxOutput, MaxOutput);
+        return constrain(output, float(-MaxOutput), float(MaxOutput));
     }
 
     float _pFactor = 0;
