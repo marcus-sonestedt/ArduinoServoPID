@@ -213,9 +213,9 @@ enum class ServoParam
 };
 
 char serialBuf[16] = {0};
-int serialLen = 0;
+unsigned int serialLen = 0;
 
-void HandleSerialCommand();
+void handleSerialCommand();
 
 void serialEvent()
 {
@@ -238,12 +238,12 @@ void serialEvent()
     if (cmdLen != serialLen)
         return;
 
-    HandleSerialCommand();
+    handleSerialCommand();
 
     serialLen = 0;
 }
 
-void HandleSerialCommand()
+void handleSerialCommand()
 {
     switch (Command(serialBuf[1]))
     {

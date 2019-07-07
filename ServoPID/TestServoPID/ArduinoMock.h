@@ -21,7 +21,7 @@ inline void setMockAnalogRead(const int pin, const int value)
 }
 
 template<typename T>
-float constrain(const T v, const T min, const T max)
+T constrain(const T v, const T min, const T max)
 {
     if (v < min)
         return min;
