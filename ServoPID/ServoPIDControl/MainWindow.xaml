@@ -5,22 +5,43 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ServoPIDControl"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="Arduino Servo PID Control" SizeToContent="WidthAndHeight">
     <Window.DataContext>
-        <local:Model x:Name="Model" />
+        <local:ArduinoModel x:Name="Model" />
     </Window.DataContext>
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="1*" />
+            <ColumnDefinition Width="Auto" />
             <ColumnDefinition Width="1*" />
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <CheckBox Grid.Column="0" IsChecked="{Binding Enabled}" x:Name="EnabledCheckBox" />
-        <TextBox Grid.Column="1" Grid.Row="0"  Text="{Binding PortName}" x:Name="PortNameTextBox" />
-        <DataGrid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
-                  ItemsSource="{Binding Servos}" x:Name="ServosDataGrid" />
+        <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Vertical">
+            <StackPanel.Resources>
+                <Style TargetType="Control">
+                    <Setter Property="Margin" Value="5 5 5 5" />
+                </Style>
+            </StackPanel.Resources>
+            <TextBlock Text="COM Port:" />
+            <ComboBox x:Name="PortNameComboBox" SelectedItem="{Binding PortName}" Text="COM Port"
+                      ItemsSource="{Binding ComPorts, Mode=Onetime}" />
+            <CheckBox x:Name="EnabledCheckBox" IsChecked="{Binding Enabled}" Content="Regulator enabled"
+                      IsEnabled="{Binding Connected, Mode=OneWay}" />
+            <CheckBox x:Name="PollPidDataCheckBox" IsChecked="{Binding PollPidData}" Content="Poll PID data"
+                      IsEnabled="{Binding Connected}" />
+            <TextBlock Text="Delta Time:" />
+            <TextBox x:Name="DeltaTimeTextBox" Text="{Binding DeltaTime, Mode=OneWay, StringFormat=F3}" IsReadOnly="true"
+                     IsEnabled="{Binding Connected}" TextAlignment="Right" />
+        </StackPanel>
+        <DataGrid Grid.Row="0" Grid.Column="1"
+                  ItemsSource="{Binding Servos}" x:Name="ServosDataGrid" IsEnabled="{Binding Connected}">
+            <DataGrid.Resources>
+                <Style TargetType="DataGridColumnHeader">
+                    <Setter Property="MinWidth" Value="50" />
+                </Style>
+            </DataGrid.Resources>
+        </DataGrid>
     </Grid>
 </Window>

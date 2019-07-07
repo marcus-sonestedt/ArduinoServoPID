@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
+﻿using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 using ServoPIDControl.Annotations;
 
 namespace ServoPIDControl
@@ -18,6 +13,10 @@ namespace ServoPIDControl
         private float _setPoint;
         private float _inputScale = 1;
         private float _inputBias;
+        private float _input;
+        private float _output;
+        private float _integrator;
+        private float _dFiltered;
 
         public ServoPidModel(int id)
         {
@@ -81,12 +80,6 @@ namespace ServoPIDControl
             }
         }
 
-        public float Input { get; set; }
-        public float Output { get; set; }
-
-        public float Integrator { get; set; }
-        public float DFiltered { get; set; }
-
         public float InputScale
         {
             get => _inputScale;
@@ -105,6 +98,50 @@ namespace ServoPIDControl
             {
                 if (value.Equals(_inputBias)) return;
                 _inputBias = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public float Input
+        {
+            get => _input;
+            internal set
+            {
+                if (value.Equals(_input)) return;
+                _input = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public float Output
+        {
+            get => _output;
+            internal set
+            {
+                if (value.Equals(_output)) return;
+                _output = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public float Integrator
+        {
+            get => _integrator;
+            internal set
+            {
+                if (value.Equals(_integrator)) return;
+                _integrator = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public float DFiltered
+        {
+            get => _dFiltered;
+            internal set
+            {
+                if (value.Equals(_dFiltered)) return;
+                _dFiltered = value;
                 OnPropertyChanged();
             }
         }

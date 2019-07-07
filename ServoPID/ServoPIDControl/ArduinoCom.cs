@@ -36,7 +36,7 @@ namespace ServoPIDControl
     {
         private SerialPort _port;
         private readonly StringBuilder _readBuf = new StringBuilder();
-        private Model _model;
+        private ArduinoModel _model;
         private readonly DispatcherTimer _timer = new DispatcherTimer() {Interval = TimeSpan.FromMilliseconds(10)};
         private readonly object _portLock = new object();
 
@@ -128,7 +128,7 @@ namespace ServoPIDControl
             MessageReceived?.Invoke(this, new StringEventArgs {Message = line});
         }
 
-        public Model Model
+        public ArduinoModel Model
         {
             get => _model;
             set
@@ -152,6 +152,8 @@ namespace ServoPIDControl
 
                     foreach (var s in Model.Servos)
                         s.PropertyChanged += ServoOnPropertyChanged;
+
+                    ModelOnPropertyChanged(this, new PropertyChangedEventArgs(null));
                 }
 
                 ConnectPort();
@@ -201,16 +203,15 @@ namespace ServoPIDControl
 
         private void ModelOnPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            switch (e.PropertyName)
-            {
-                case nameof(Model.Enabled):
-                    SendCommand(Command.EnableRegulator, (byte) (Model.Enabled ? 1 : 0));
-                    break;
-
-                case nameof(Model.PortName):
+            if (e.PropertyName == null || e.PropertyName == nameof(Model.Enabled))
+                    if (_port.IsOpen)
+                        SendCommand(Command.EnableRegulator, (byte) (Model.Enabled ? 1 : 0));
+            
+            if (e.PropertyName == null || e.PropertyName == nameof(Model.ComPorts))
                     ConnectPort();
-                    break;
-            }
+
+            if (e.PropertyName == null || e.PropertyName == nameof(Model.PollPidData))
+                    _timer.IsEnabled = Model.PollPidData;
         }
 
         private void SendCommand(Command cmd, params byte[] data)
@@ -238,10 +239,18 @@ namespace ServoPIDControl
             {
                 if (_port != null)
                 {
-                    _port.DataReceived -= PortOnDataReceived;
-                    _port.Close();
-                    _port.Dispose();
-                    _port = null;
+                    try
+                    {
+                        _port.DataReceived -= PortOnDataReceived;
+                        _port.Close();
+                    }
+                    finally
+                    {
+
+                        _port.Dispose();
+                        _port = null;
+                        Model.Connected = false;
+                    }
                 }
 
                 if (Model == null)
@@ -252,6 +261,8 @@ namespace ServoPIDControl
                     _port = new SerialPort(Model.PortName);
                     _port.Open();
                     _port.DataReceived += PortOnDataReceived;
+
+                    Model.Connected = true;
                 }
                 catch (Exception)
                 {
@@ -264,6 +275,8 @@ namespace ServoPIDControl
             SendCommand(Command.GetNumServos);
             SendCommand(Command.GetServoParams);
             SendCommand(Command.GetServoData);
+
+            SendCommand(Command.EnableRegulator, (byte)(Model.Enabled ? 1 : 0));
         }
 
         public void Dispose()

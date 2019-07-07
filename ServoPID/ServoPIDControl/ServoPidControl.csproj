@@ -56,7 +56,7 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="ArduinoCom.cs" />
-    <Compile Include="Model.cs" />
+    <Compile Include="ArduinoModel.cs" />
     <Compile Include="Properties\Annotations.cs" />
     <Compile Include="ServoPidModel.cs" />
     <Page Include="MainWindow.xaml">
