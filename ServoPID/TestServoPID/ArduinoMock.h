@@ -1,6 +1,9 @@
 #pragma once
 
-// ReSharper disable once CppInconsistentNaming
+// ReSharper disable CppInconsistentNaming
+// ReSharper disable CppMemberFunctionMayBeStatic
+// ReSharper disable CppParameterNeverUsed
+
 constexpr const char* F(const char* x) { return x; }
 
 // Mock globals
@@ -28,7 +31,7 @@ T constrain(const T v, const T min, const T max)
 
 // Mock Servo
 
-class Servo
+class MockServo
 {
 public:
     void attach(const int pin, const int min, const int max)
@@ -50,14 +53,14 @@ private:
     int _angle = 0;
 };
 
+typedef MockServo Servo;
+
 
 class MockSerial
 {
 public:
-    // ReSharper disable CppMemberFunctionMayBeStatic
-    void begin(int baudrate) const {}
+    void begin(int baudRate) const {}
     void end() const {}
-    // ReSharper restore CppMemberFunctionMayBeStatic
 
     int available() const { return dataRead.size(); }
 
@@ -86,5 +89,17 @@ public:
     std::stringstream dataWrite;
 };
 
-// ReSharper disable once CppInconsistentNaming
 extern MockSerial Serial;
+
+class MockWire
+{
+public:
+    void begin() const {}
+    void setClock(const int baudRate) const {}
+};
+
+extern MockWire Wire;
+
+// ReSharper restore CppInconsistentNaming
+// ReSharper restore CppMemberFunctionMayBeStatic
+// ReSharper restore CppParameterNeverUsed

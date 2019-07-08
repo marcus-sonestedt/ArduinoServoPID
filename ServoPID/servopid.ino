@@ -1,7 +1,17 @@
-#ifdef _MSC_VER
+#define USE_PCA9684 1  // set 0 to use Arduino to directly control servos
+
+#ifndef ARDUINO
 #include "ArduinoMock.h"
+#if USE_PCA9684 == 1
+#include "PCA9685Mock.h"
+#endif
 #else
-#include <Servo.h>
+#if USE_PCA9684 == 1
+ #include <Wire.h>
+ #include <PCA9684.h>
+#else
+ #include <Servo.h>
+#endif
 #endif
 
 // PID regulator, incl low-pass lambda filter on D part
@@ -79,11 +89,52 @@ public:
     float _scale = 1;
 };
 
-class PidServo
+class ServoBase
 {
 public:
     static const int MinAngle = 80;
     static const int MaxAngle = 100;
+};
+
+PCA9685 gPwmController;
+
+class PCA9685Servo : public ServoBase
+{
+public:
+    PCA9685Servo() = default;
+
+    void attach(int pin, int pwmMin, int pwmMax)
+    {
+        _pin = pin;
+        _servoEval = PCA9685_ServoEvaluator(pwmMin, pwmMax);
+    }
+
+    // ReSharper disable once CppMemberFunctionMayBeConst
+    void write(float angle)
+    {
+        const auto cAngle = constrain(angle, float(MinAngle), float(MaxAngle));
+        const auto pwm = _servoEval.pwmForAngle(cAngle);
+        gPwmController.setChannelPWM(_pin, pwm);
+    }
+
+private:
+    uint8_t _pin = 0;
+    PCA9685_ServoEvaluator _servoEval;
+};
+class ArduinoServo : public MockServo, public ServoBase
+{
+public:
+    void write(float angle) 
+    {
+        Servo::write(constrain(int(angle), MinAngle, MaxAngle));
+    }
+};
+
+
+
+class PidServo
+{
+public:
 
     PidServo() = default;
 
@@ -104,16 +155,20 @@ public:
     {
         _input = _analogPin.read();
         _output = _pid.regulate(_input, _setPoint, dt);
-        _servo.write(constrain(int(_output * 180.0f), MinAngle, MaxAngle));
+        _servo.write(_output * 180.0f);
     }
 
-    Servo _servo;
+#if USE_PCA9684 == 1
+    PCA9685Servo _servo;
+#else
+    ArduinoServo _servo;
+#endif
     PID _pid;
     AnalogPin _analogPin;
 
     float _setPoint = 0.5f;
     float _input = 0;
-    float _output = 0; 
+    float _output = 0;
 };
 
 ////////////////////////////////////////////////////////////////////
@@ -132,9 +187,19 @@ float prevTime = 0;
 float dt = 0;
 bool enabled = true;
 
-void setup() {
+void setup()
+{
+#if USE_PCA9684
+    gPwmController.init();
+
+    Wire.begin();                       // Wire must be started first
+    Wire.setClock(400000);              // Supported baud rates are 100kHz, 400kHz, and 1000kHz
+
+    gPwmController.resetDevices();
+#endif
+
     // assume servos on pin 3,5,6,9 and potentiometers on analog in 0,1,2,3
-    
+
     const auto p = 3.0f;
     const auto i = 1.0f;
     const auto d = 0.05f;
@@ -142,12 +207,12 @@ void setup() {
 
     FL = PidServo(
         3, 544, 2400, // servo pin, pwm min, pwm max
-        PID(p, i, d, dL), 
+        PID(p, i, d, dL),
         AnalogPin(0, 0, 1023) // potentiometer pin, in min, in max
     );
     FR = PidServo(
         5, 544, 2400, // servo pin, pwm min, pwm max
-        PID(p, i, d, dL), 
+        PID(p, i, d, dL),
         AnalogPin(1, 0, 1023) // potentiometer pin, in min, in max
     );
     RL = PidServo(
@@ -157,7 +222,7 @@ void setup() {
     );
     RR = PidServo(
         9, 544, 2400, // servo pin, pwm min, pwm max
-        PID(p, i, d, dL), 
+        PID(p, i, d, dL),
         AnalogPin(3, 0, 1023) // potentiometer pin, in min, in max
     );
 
@@ -294,7 +359,7 @@ void handleSerialCommand()
         break;
 
     case Command::GetServoParams:
-        for (auto i = 0; i < NUM_SERVOS; ++i)  // NOLINT(modernize-loop-convert)
+        for (auto i = 0; i < NUM_SERVOS; ++i) // NOLINT(modernize-loop-convert)
         {
             const auto& servo = PidServos[i];
 
