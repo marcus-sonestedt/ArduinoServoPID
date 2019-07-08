@@ -1,12 +1,12 @@
-#define USE_PCA9684 1  // set 0 to use Arduino to directly control servos
+#define USE_PCA9685 1  // set 0 to use Arduino to directly control servos
 
 #ifndef ARDUINO
 #include "ArduinoMock.h"
-#if USE_PCA9684 == 1
+#if USE_PCA9685 == 1
 #include "PCA9685Mock.h"
 #endif
 #else
-#if USE_PCA9684 == 1
+#if USE_PCA9685 == 1
  #include <Wire.h>
  #include <PCA9684.h>
 #else
@@ -189,13 +189,14 @@ bool enabled = true;
 
 void setup()
 {
-#if USE_PCA9684
-    gPwmController.init();
-
+#if USE_PCA9685
     Wire.begin();                       // Wire must be started first
     Wire.setClock(400000);              // Supported baud rates are 100kHz, 400kHz, and 1000kHz
 
-    gPwmController.resetDevices();
+    pwmController.resetDevices();       // Software resets all PCA9685 devices on Wire line
+
+    pwmController.init(B010101);        // Address pins A5-A0 set to B010101
+    pwmController.setPWMFrequency(500); // Default is 200Hz, supports 24Hz to 1526Hz
 #endif
 
     // assume servos on pin 3,5,6,9 and potentiometers on analog in 0,1,2,3
