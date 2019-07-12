@@ -8,7 +8,7 @@
 #else
 #if USE_PCA9685 == 1
  #include <Wire.h>
- #include <PCA9684.h>
+ #include <PCA9685.h>
 #else
  #include <Servo.h>
 #endif
