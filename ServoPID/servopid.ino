@@ -1,4 +1,4 @@
-#define USE_PCA9685 1  // set 0 to use Arduino to directly control servos
+#define USE_PCA9685 0 // set 0 to use Arduino to directly control servos
 
 #ifndef ARDUINO
 #include "ArduinoMock.h"
@@ -69,6 +69,8 @@ public:
 class AnalogPin
 {
 public:
+    static constexpr float Range = 180.0f
+
     AnalogPin() = default;
 
     AnalogPin(int pin, int min, int max)
@@ -81,7 +83,7 @@ public:
     float read() const
     {
         const auto value = float(analogRead(_pin));
-        return (value * _scale) + _bias;
+        return ((value * _scale) + _bias) * Range;
     }
 
     int _pin = 0;
@@ -155,7 +157,7 @@ public:
     {
         _input = _analogPin.read();
         _output = _pid.regulate(_input, _setPoint, dt);
-        _servo.write(_output * 180.0f);
+        _servo.write(_output);
     }
 
 #if USE_PCA9685 == 1
@@ -202,8 +204,8 @@ void setup()
     // assume servos on pin 3,5,6,9 and potentiometers on analog in 0,1,2,3
 
     const auto p = 3.0f;
-    const auto i = 1.0f;
-    const auto d = 0.05f;
+    const auto i = 0.0f;
+    const auto d = 0.00f;
     const auto dL = 0.1f;
 
     FL = PidServo(
