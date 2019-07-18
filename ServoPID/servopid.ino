@@ -103,14 +103,14 @@ class PCA9685Servo : public ServoBase
 public:
     PCA9685Servo() = default;
 
-    void attach(int pin, int pwmMin, int pwmMax)
+    void attach(const int pin, const int pwmMin, const int pwmMax)
     {
         _pin = pin;
         _servoEval = PCA9685_ServoEvaluator(pwmMin, pwmMax);
     }
 
     // ReSharper disable once CppMemberFunctionMayBeConst
-    void write(float angle)
+    void write(const float angle)
     {
         const auto cAngle = constrain(angle, float(MinAngle), float(MaxAngle));
         const auto pwm = _servoEval.pwmForAngle(cAngle);
@@ -158,7 +158,7 @@ public:
         _servo.write(_output * 180.0f);
     }
 
-#if USE_PCA9684 == 1
+#if USE_PCA9685 == 1
     PCA9685Servo _servo;
 #else
     ArduinoServo _servo;
@@ -193,10 +193,10 @@ void setup()
     Wire.begin();                       // Wire must be started first
     Wire.setClock(400000);              // Supported baud rates are 100kHz, 400kHz, and 1000kHz
 
-    pwmController.resetDevices();       // Software resets all PCA9685 devices on Wire line
+    gPwmController.resetDevices();       // Software resets all PCA9685 devices on Wire line
 
-    pwmController.init(B010101);        // Address pins A5-A0 set to B010101
-    pwmController.setPWMFrequency(500); // Default is 200Hz, supports 24Hz to 1526Hz
+    gPwmController.init(21);              // Address pins A5-A0 set to B010101
+    gPwmController.setPWMFrequency(500); // Default is 200Hz, supports 24Hz to 1526Hz
 #endif
 
     // assume servos on pin 3,5,6,9 and potentiometers on analog in 0,1,2,3
