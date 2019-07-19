@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO.Ports;
 using System.Linq;
 using System.Text;
+using System.Windows;
 using System.Windows.Threading;
 
 namespace ServoPIDControl
@@ -44,6 +45,8 @@ namespace ServoPIDControl
         {
             _timer.Tick += TimerOnTick;
             _timer.Start();
+
+            MessageReceived += (s, a) => Debug.WriteLine($"Received: {a.Message}");
         }
 
         private void TimerOnTick(object sender, EventArgs e)
@@ -51,7 +54,7 @@ namespace ServoPIDControl
             if ((!_port?.IsOpen ?? false) || Model == null)
                 return;
 
-            SendCommand(Command.GetServoData);
+            SendCommand(Command.GetServoData, (byte)Model.Servos.Count);
         }
 
         public class StringEventArgs : EventArgs
@@ -70,10 +73,10 @@ namespace ServoPIDControl
 
             while (_readBuf.ToString().Contains('\n'))
             {
-                Debug.WriteLine(_readBuf.ToString());
+                //Debug.WriteLine(_readBuf.ToString());
 
                 var lines = _readBuf.ToString().Split('\n');
-                foreach (var line in lines)
+                foreach (var line in lines.Select(l => l.Trim()).Where(l => !string.IsNullOrWhiteSpace(l)))
                     LineReceived(line);
 
                 _readBuf.Clear();
@@ -82,47 +85,65 @@ namespace ServoPIDControl
 
         private void LineReceived(string line)
         {
-            if (line.StartsWith("NS "))
-            {
-                Model.Servos.Clear();
-
-                var numServos = int.Parse(line.Substring(3));
-                for (var i = 0; i < numServos; ++i)
-                    Model.Servos.Add(new ServoPidModel(Model.Servos.Count));
-
-                return;
-            }
-
-            if (line.StartsWith("SP "))
-            {
-                var parts = line.Split('\n');
-                var servoId = int.Parse(parts[1]);
-                var servo = Model.Servos[servoId];
-                servo.P = float.Parse(parts[2]);
-                servo.I = float.Parse(parts[3]);
-                servo.D = float.Parse(parts[4]);
-                servo.DLambda = float.Parse(parts[5]);
-                servo.SetPoint = float.Parse(parts[6]);
-                return;
-            }
-
-            if (line.StartsWith("SD "))
-            {
-                var parts = line.Split('\n');
-                var servoId = int.Parse(parts[1]);
-                var servo = Model.Servos[servoId];
-                servo.Input = float.Parse(parts[2]);
-                servo.Output = float.Parse(parts[3]);
-                servo.Integrator = float.Parse(parts[4]);
-                servo.DFiltered = float.Parse(parts[5]);
-                return;
-            }
-
             if (line.StartsWith("DT "))
             {
-                var dt = float.Parse(line.Substring(3));
-                Model.DeltaTime = dt;
+                if (float.TryParse(line.Substring(3), out var dt))
+                    Model.DeltaTime = dt;
+                else
+                    Debug.WriteLine("Bad DT received: " + line);
+                
                 return;
+            }
+
+            if (line.StartsWith("NS "))
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    Model.Servos.Clear();
+
+                    if (int.TryParse(line.Substring(3), out var numServos))
+                        for (var i = 0; i < numServos; ++i)
+                            Model.Servos.Add(new ServoPidModel(Model.Servos.Count));
+                });
+
+                SendCommand(Command.GetServoParams);
+            }
+            else if (line.StartsWith("SP "))
+            {
+                var parts = line.Split(' ');
+                try
+                {
+                    var servoId = int.Parse(parts[1]);
+                    var servo = Model.Servos[servoId];
+                    servo.P = float.Parse(parts[2]);
+                    servo.I = float.Parse(parts[3]);
+                    servo.D = float.Parse(parts[4]);
+                    servo.DLambda = float.Parse(parts[5]);
+                    servo.SetPoint = float.Parse(parts[6]);
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine("Bad servo data: " + line + " - " + e.Message);
+                    return;
+                }
+            }
+            else if (line.StartsWith("SD "))
+            {
+                var parts = line.Split(' ');
+                try
+                {
+                    var servoId = int.Parse(parts[1]);
+                    var servo = Model.Servos[servoId];
+                    servo.Input = float.Parse(parts[2]);
+                    servo.Output = float.Parse(parts[3]);
+                    servo.Integrator = float.Parse(parts[4]);
+                    servo.DFiltered = float.Parse(parts[5]);
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine("Bad servo data: " + line + " - " + e.Message);
+                    return;
+                }
             }
 
             MessageReceived?.Invoke(this, new StringEventArgs {Message = line});
@@ -191,27 +212,31 @@ namespace ServoPIDControl
 
         private void ServosOnCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
-            foreach (var servo in e.OldItems.Cast<ServoPidModel>())
-                servo.PropertyChanged -= ServoOnPropertyChanged;
+            if (e.OldItems != null)
+                foreach (var servo in e.OldItems.Cast<ServoPidModel>())
+                    servo.PropertyChanged -= ServoOnPropertyChanged;
 
-            foreach (var servo in e.NewItems.Cast<ServoPidModel>())
-                servo.PropertyChanged += ServoOnPropertyChanged;
+            if (e.NewItems != null)
+                foreach (var servo in e.NewItems.Cast<ServoPidModel>())
+                    servo.PropertyChanged += ServoOnPropertyChanged;
 
             if (e.Action == NotifyCollectionChangedAction.Reset)
-                throw new NotImplementedException("Servo collection was reset");
+            {
+                foreach (var servo in Model.Servos)
+                    servo.PropertyChanged -= ServoOnPropertyChanged;
+            }
         }
 
         private void ModelOnPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName == null || e.PropertyName == nameof(Model.Enabled))
-                    if (_port.IsOpen)
-                        SendCommand(Command.EnableRegulator, (byte) (Model.Enabled ? 1 : 0));
-            
-            if (e.PropertyName == null || e.PropertyName == nameof(Model.ComPorts))
-                    ConnectPort();
+                SendCommand(Command.EnableRegulator, (byte) (Model.Enabled ? 1 : 0));
+
+            if ((e.PropertyName == null || e.PropertyName == nameof(Model.PortName)))
+                ConnectPort();
 
             if (e.PropertyName == null || e.PropertyName == nameof(Model.PollPidData))
-                    _timer.IsEnabled = Model.PollPidData;
+                _timer.IsEnabled = Model.PollPidData;
         }
 
         private void SendCommand(Command cmd, params byte[] data)
@@ -220,6 +245,10 @@ namespace ServoPIDControl
 
             lock (_portLock)
             {
+                if (_port == null || !_port.IsOpen)
+                    return;
+
+                Debug.WriteLine($"Sending {cmdData.Length}: {BitConverter.ToString(cmdData)}");
                 _port.Write(cmdData, 0, cmdData.Length);
             }
         }
@@ -246,20 +275,25 @@ namespace ServoPIDControl
                     }
                     finally
                     {
-
                         _port.Dispose();
                         _port = null;
                         Model.Connected = false;
                     }
                 }
 
-                if (Model == null)
+                if (Model?.PortName == null)
                     return;
 
                 try
                 {
-                    _port = new SerialPort(Model.PortName);
+                    _port = new SerialPort(Model.PortName)
+                    {
+                        BaudRate = 115200
+                    };
                     _port.Open();
+
+                    Debug.WriteLine("Sending: RST");
+                    _port.WriteLine("RST");
                     _port.DataReceived += PortOnDataReceived;
 
                     Model.Connected = true;
@@ -268,15 +302,13 @@ namespace ServoPIDControl
                 {
                     _port?.Dispose();
                     _port = null;
-                    throw;
+                    //throw;
                 }
             }
 
             SendCommand(Command.GetNumServos);
-            SendCommand(Command.GetServoParams);
-            SendCommand(Command.GetServoData);
 
-            SendCommand(Command.EnableRegulator, (byte)(Model.Enabled ? 1 : 0));
+            //SendCommand(Command.EnableRegulator, (byte) (Model.Enabled ? 1 : 0));
         }
 
         public void Dispose()

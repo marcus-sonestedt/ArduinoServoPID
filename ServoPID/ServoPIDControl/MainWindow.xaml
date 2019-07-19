@@ -32,7 +32,7 @@
             <CheckBox x:Name="PollPidDataCheckBox" IsChecked="{Binding PollPidData}" Content="Poll PID data"
                       IsEnabled="{Binding Connected}" />
             <TextBlock Text="Delta Time:" />
-            <TextBox x:Name="DeltaTimeTextBox" Text="{Binding DeltaTime, Mode=OneWay, StringFormat=F3}" IsReadOnly="true"
+            <TextBox x:Name="DeltaTimeTextBox" Text="{Binding DeltaTime, Mode=OneWay, StringFormat=F6}" IsReadOnly="true"
                      IsEnabled="{Binding Connected}" TextAlignment="Right" />
         </StackPanel>
         <DataGrid Grid.Row="0" Grid.Column="1"

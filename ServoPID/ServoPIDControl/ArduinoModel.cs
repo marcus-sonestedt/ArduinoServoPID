@@ -28,7 +28,7 @@ namespace ServoPIDControl
                 Servos.Add(new ServoPidModel(i));
 
             _timer = new DispatcherTimer {Interval = TimeSpan.FromSeconds(1), IsEnabled = true};
-            _timer.Tick += (s, a) => ComPorts = SerialPort.GetPortNames();
+            _timer.Tick += (s, a) => ComPorts = SerialPort.GetPortNames().Distinct().ToArray();
         }
 
         public string PortName

@@ -20,7 +20,6 @@ class PID
 public:
     // adjust to control the amount of "energy" that the PID integrator can store
     static const int MaxIntegratorStore = 50;
-    static const int MaxOutput = 100;
 
     PID() = default;
 
@@ -51,8 +50,7 @@ public:
         _integral = constrain(_integral + error * dt, float(-MaxIntegratorStore), float(MaxIntegratorStore));
         // limit "energy" storage in integrator
 
-        const auto output = _pFactor * error + _iFactor * _integral + _dFactor * _deltaFiltered;
-        return constrain(output, float(-MaxOutput), float(MaxOutput));
+        return _pFactor * error + _iFactor * _integral + _dFactor * _deltaFiltered;
     }
 
     float _pFactor = 0;
@@ -69,7 +67,7 @@ public:
 class AnalogPin
 {
 public:
-    static constexpr float Range = 180.0f
+    static constexpr float Range = 320.0f;
 
     AnalogPin() = default;
 
@@ -98,6 +96,7 @@ public:
     static const int MaxAngle = 100;
 };
 
+#if USE_PCA9685 == 1
 PCA9685 gPwmController;
 
 class PCA9685Servo : public ServoBase
@@ -123,7 +122,9 @@ private:
     uint8_t _pin = 0;
     PCA9685_ServoEvaluator _servoEval;
 };
-class ArduinoServo : public MockServo, public ServoBase
+#else
+
+class ArduinoServo : public Servo, public ServoBase
 {
 public:
     void write(float angle) 
@@ -132,7 +133,7 @@ public:
     }
 };
 
-
+#endif
 
 class PidServo
 {
@@ -175,9 +176,7 @@ public:
 
 ////////////////////////////////////////////////////////////////////
 
-// numbers <-> wheel
 constexpr int NUM_SERVOS = 4;
-
 PidServo PidServos[NUM_SERVOS];
 
 constexpr PidServo& FL = PidServos[0];
@@ -203,13 +202,13 @@ void setup()
 
     // assume servos on pin 3,5,6,9 and potentiometers on analog in 0,1,2,3
 
-    const auto p = 3.0f;
-    const auto i = 0.0f;
+    const auto p = 0.00f;
+    const auto i = 0.00f;
     const auto d = 0.00f;
     const auto dL = 0.1f;
 
     FL = PidServo(
-        3, 544, 2400, // servo pin, pwm min, pwm max
+        10, 544, 2400, // servo pin, pwm min, pwm max
         PID(p, i, d, dL),
         AnalogPin(0, 0, 1023) // potentiometer pin, in min, in max
     );
@@ -229,12 +228,11 @@ void setup()
         AnalogPin(3, 0, 1023) // potentiometer pin, in min, in max
     );
 
-    // setPoint => where we want servo to be on relative scale [0..1] (min..max)
-    // set front wheels lower than rear
-    FL.setPoint(0.3f);
-    FR.setPoint(0.3f);
-    RL.setPoint(0.5f);
-    RR.setPoint(0.5f);
+    // setPoint => where we want servo to be ([80..100])
+    FL.setPoint(90);
+    FR.setPoint(90);
+    RL.setPoint(90);
+    RR.setPoint(90);
 
     // start serials
     Serial.begin(115200);
@@ -242,6 +240,8 @@ void setup()
     // initiate timer
     prevTime = 1e-6f * float(micros());
 }
+
+int x = 0;
 
 void loop()
 {
@@ -255,8 +255,10 @@ void loop()
         for (auto& PidServo : PidServos)
             PidServo.run(dt);
 
-    Serial.print("DT ");
-    Serial.println(dt, 3);
+    if (x++ % 100 == 0) {
+      Serial.print("DT ");
+      Serial.println(dt, 6);
+    }
 }
 
 enum class Command
@@ -280,16 +282,27 @@ enum class ServoParam
     InputBias
 };
 
-char serialBuf[16] = {0};
+char serialBuf[128] = {0};
 unsigned int serialLen = 0;
 
 void handleSerialCommand();
 
 void serialEvent()
 {
-    while (Serial.available() > 0 && serialLen < sizeof(serialBuf))
+    while (Serial.available() > 0 && serialLen < sizeof(serialBuf)) {
         serialBuf[serialLen++] = Serial.read();
 
+        if (serialLen >= 4 
+        && serialBuf[serialLen-4] == 'R'
+        && serialBuf[serialLen-3] == 'S'
+        && serialBuf[serialLen-2] == 'T'
+        && serialBuf[serialLen-1] == '\n') {
+          serialLen = 0;
+          Serial.println("RST ACK");
+        }        
+    }
+
+    
     if (serialLen == 0)
         return;
 
@@ -300,11 +313,18 @@ void serialEvent()
         return;
     }
 
-    const auto cmdLen = serialBuf[serialLen - 1];
-
+    const auto cmdLen = serialBuf[0];
+/*
+    Serial.print("Got ");
+    Serial.print(serialLen);
+    Serial.print('/');
+    Serial.println(int(cmdLen));
+ */
     // more data
     if (cmdLen != serialLen)
         return;
+
+    Serial.println("OK");
 
     handleSerialCommand();
 
