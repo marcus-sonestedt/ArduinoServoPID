@@ -38,7 +38,7 @@ namespace ServoPIDControl
         private SerialPort _port;
         private readonly StringBuilder _readBuf = new StringBuilder();
         private ArduinoModel _model;
-        private readonly DispatcherTimer _timer = new DispatcherTimer() {Interval = TimeSpan.FromMilliseconds(10)};
+        private readonly DispatcherTimer _timer = new DispatcherTimer {Interval = TimeSpan.FromMilliseconds(250)};
         private readonly object _portLock = new object();
 
         public ArduinoCom()
@@ -54,7 +54,7 @@ namespace ServoPIDControl
             if ((!_port?.IsOpen ?? false) || Model == null)
                 return;
 
-            SendCommand(Command.GetServoData, (byte)Model.Servos.Count);
+            SendCommand(Command.GetServoData, (byte) Model.Servos.Count);
         }
 
         public class StringEventArgs : EventArgs
@@ -71,15 +71,13 @@ namespace ServoPIDControl
                 _readBuf.Append(_port.ReadExisting());
             }
 
-            while (_readBuf.ToString().Contains('\n'))
+            string str;
+            while ((str = _readBuf.ToString()).IndexOfAny(new [] {'\n', '\r'}) >= 0)
             {
-                //Debug.WriteLine(_readBuf.ToString());
-
-                var lines = _readBuf.ToString().Split('\n');
-                foreach (var line in lines.Select(l => l.Trim()).Where(l => !string.IsNullOrWhiteSpace(l)))
-                    LineReceived(line);
-
+                var lines = str.Split(new[] {'\n','\r'}, StringSplitOptions.RemoveEmptyEntries);
+                Application.Current.Dispatcher.Invoke(() => LineReceived(lines.First().Trim()));
                 _readBuf.Clear();
+                _readBuf.Append(string.Join("\n", lines.Skip(1)));
             }
         }
 
@@ -87,11 +85,18 @@ namespace ServoPIDControl
         {
             if (line.StartsWith("DT "))
             {
-                if (float.TryParse(line.Substring(3), out var dt))
-                    Model.DeltaTime = dt;
-                else
-                    Debug.WriteLine("Bad DT received: " + line);
-                
+                var parts = line.Split(' ');
+                try
+                {
+                    Model.DeltaTime = float.Parse(parts[1]);
+                    Model.MinDt = float.Parse(parts[2]);
+                    Model.MaxDt = float.Parse(parts[3]);
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine($"Bad DT received: {line} - {e.Message}");
+                }
+
                 return;
             }
 
@@ -99,11 +104,18 @@ namespace ServoPIDControl
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    Model.Servos.Clear();
+                    if (!int.TryParse(line.Substring(3), out var numServos)) 
+                        return;
 
-                    if (int.TryParse(line.Substring(3), out var numServos))
-                        for (var i = 0; i < numServos; ++i)
-                            Model.Servos.Add(new ServoPidModel(Model.Servos.Count));
+                    if (numServos >= 33)
+                    {
+                        Debug.WriteLine("Too many servos: " + numServos);
+                        return;
+                    }
+                   
+                    Model.Servos.Clear();
+                    for (var i = 0; i < numServos; ++i)
+                        Model.Servos.Add(new ServoPidModel(Model.Servos.Count));
                 });
 
                 SendCommand(Command.GetServoParams);
@@ -141,9 +153,21 @@ namespace ServoPIDControl
                 }
                 catch (Exception e)
                 {
-                    Debug.WriteLine("Bad servo data: " + line + " - " + e.Message);
+                    Debug.WriteLine($"Bad servo data: {line} - {e.Message}");
                     return;
                 }
+            }
+            else if (line.StartsWith("ERR: "))
+            {
+                lock (_portLock)
+                {
+                    _port.WriteLine("RST");
+                }
+            }
+            else
+            {
+                Debug.WriteLine($"Ignored: {line}");
+                return;
             }
 
             MessageReceived?.Invoke(this, new StringEventArgs {Message = line});
@@ -221,10 +245,8 @@ namespace ServoPIDControl
                     servo.PropertyChanged += ServoOnPropertyChanged;
 
             if (e.Action == NotifyCollectionChangedAction.Reset)
-            {
                 foreach (var servo in Model.Servos)
                     servo.PropertyChanged -= ServoOnPropertyChanged;
-            }
         }
 
         private void ModelOnPropertyChanged(object sender, PropertyChangedEventArgs e)
@@ -232,7 +254,7 @@ namespace ServoPIDControl
             if (e.PropertyName == null || e.PropertyName == nameof(Model.Enabled))
                 SendCommand(Command.EnableRegulator, (byte) (Model.Enabled ? 1 : 0));
 
-            if ((e.PropertyName == null || e.PropertyName == nameof(Model.PortName)))
+            if (e.PropertyName == null || e.PropertyName == nameof(Model.PortName))
                 ConnectPort();
 
             if (e.PropertyName == null || e.PropertyName == nameof(Model.PollPidData))
@@ -288,7 +310,10 @@ namespace ServoPIDControl
                 {
                     _port = new SerialPort(Model.PortName)
                     {
-                        BaudRate = 115200
+                        BaudRate = 115200,
+                        NewLine = "\n",
+                        ReadBufferSize = 4096,
+                        WriteBufferSize = 4096,
                     };
                     _port.Open();
 

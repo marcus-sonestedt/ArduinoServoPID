@@ -11,7 +11,7 @@ namespace ServoPIDControl
 {
     public class ArduinoModel : INotifyPropertyChanged, IDisposable
     {
-        private string _portName = "COM3";
+        private string _portName = null;
         private bool _enabled = true;
         private float _deltaTime;
         private bool _connected;
@@ -19,6 +19,8 @@ namespace ServoPIDControl
         private string[] _comPorts;
 
         private readonly DispatcherTimer _timer;
+        private float _minDt;
+        private float _maxDt;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -98,6 +100,28 @@ namespace ServoPIDControl
             {
                 if (value == _connected) return;
                 _connected = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public float MinDt
+        {
+            get => _minDt;
+            set
+            {
+                if (value.Equals(_minDt)) return;
+                _minDt = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public float MaxDt
+        {
+            get => _maxDt;
+            set
+            {
+                if (value.Equals(_maxDt)) return;
+                _maxDt = value;
                 OnPropertyChanged();
             }
         }

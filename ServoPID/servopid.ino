@@ -1,4 +1,4 @@
-#define USE_PCA9685 0 // set 0 to use Arduino to directly control servos
+ #define USE_PCA9685 0 // set 0 to use Arduino to directly control servos
 
 #ifndef ARDUINO
 #include "ArduinoMock.h"
@@ -135,9 +135,11 @@ public:
 
 #endif
 
+
 class PidServo
 {
 public:
+    static bool enabled;
 
     PidServo() = default;
 
@@ -157,7 +159,10 @@ public:
     void run(const float dt)
     {
         _input = _analogPin.read();
-        _output = _pid.regulate(_input, _setPoint, dt);
+        
+        if (enabled)
+          _output = _pid.regulate(_input, _setPoint, dt);
+        
         _servo.write(_output);
     }
 
@@ -174,6 +179,8 @@ public:
     float _output = 0;
 };
 
+bool PidServo::enabled = true;
+
 ////////////////////////////////////////////////////////////////////
 
 constexpr int NUM_SERVOS = 4;
@@ -186,7 +193,6 @@ constexpr PidServo& RR = PidServos[3];
 
 float prevTime = 0;
 float dt = 0;
-bool enabled = true;
 
 void setup()
 {
@@ -237,11 +243,18 @@ void setup()
     // start serials
     Serial.begin(115200);
 
+    // empty input buffer
+    while(Serial.available())
+      Serial.read();
+
+
     // initiate timer
     prevTime = 1e-6f * float(micros());
 }
 
 int x = 0;
+float maxDt = 0;
+float minDt = 100;
 
 void loop()
 {
@@ -251,14 +264,29 @@ void loop()
     prevTime = t;
 
     // regulate servos
-    if (enabled)
-        for (auto& PidServo : PidServos)
-            PidServo.run(dt);
+    for (auto& PidServo : PidServos)
+        PidServo.run(dt);
+
+    maxDt = dt > maxDt ? dt : maxDt;
+    minDt = dt < minDt ? dt : minDt;
 
     if (x++ % 100 == 0) {
-      Serial.print("DT ");
-      Serial.println(dt, 6);
+      Serial.flush();
+      Serial.print(F("DT "));
+      Serial.print(dt, 6);
+      Serial.print(' ');
+      Serial.print(minDt, 6);
+      Serial.print(' ');
+      Serial.print(maxDt, 6);
+      Serial.print('\n');
+      Serial.flush();
+
+      minDt = 100;
+      maxDt = 0;
     }
+
+    if (Serial.available())
+      mySerialEvent();
 }
 
 enum class Command
@@ -287,8 +315,8 @@ unsigned int serialLen = 0;
 
 void handleSerialCommand();
 
-void serialEvent()
-{
+void mySerialEvent()
+{    
     while (Serial.available() > 0 && serialLen < sizeof(serialBuf)) {
         serialBuf[serialLen++] = Serial.read();
 
@@ -297,18 +325,21 @@ void serialEvent()
         && serialBuf[serialLen-3] == 'S'
         && serialBuf[serialLen-2] == 'T'
         && serialBuf[serialLen-1] == '\n') {
+          while(Serial.available())
+            Serial.read();
+            
           serialLen = 0;
-          Serial.println("RST ACK");
+          Serial.print(F("RST ACK\n"));
+          Serial.flush();
         }        
     }
-
-    
+  
     if (serialLen == 0)
         return;
 
     if (serialLen >= sizeof(serialBuf))
     {
-        Serial.println(F("ERR: Command buffer overflow"));
+        Serial.print(F("ERR: Command buffer overflow\n"));
         serialLen = 0;
         return;
     }
@@ -320,13 +351,15 @@ void serialEvent()
     Serial.print('/');
     Serial.println(int(cmdLen));
  */
-    // more data
-    if (cmdLen != serialLen)
+    // need more more data
+    if (cmdLen < serialLen)
         return;
 
-    Serial.println("OK");
+    //Serial.println("OK");
 
+    Serial.flush();
     handleSerialCommand();
+    Serial.flush();
 
     serialLen = 0;
 }
@@ -335,13 +368,14 @@ void handleSerialCommand()
 {
     switch (Command(serialBuf[1]))
     {
-        // len, cmd, pid#, param-id, float-value[4]
+    // len, cmd, pid#, param-id, float-value[4]
     case Command::SetServoParamFloat:
         {
             if (serialBuf[2] >= NUM_SERVOS)
             {
                 Serial.print(F("ERR: Invalid servo number "));
-                Serial.println(serialBuf[2]);
+                Serial.print(serialBuf[2]);
+                Serial.print('\n');
                 return;
             }
 
@@ -365,20 +399,25 @@ void handleSerialCommand()
                 break;
             default:
                 Serial.print(F("ERR: Unknown servo parameter "));
-                Serial.println(serialBuf[3]);
+                Serial.print(serialBuf[3]);
+                Serial.print('\n');
                 return;
             }
         }
-        Serial.println(F("OK"));
+        Serial.print(F("OK"));
+        Serial.print('\n');
         break;
 
     case Command::EnableRegulator:
-        enabled = serialBuf[1] != 0;
+        PidServo::enabled = serialBuf[1] != 0;
+        Serial.print(F("OK"));
+        Serial.print('\n');
         break;
 
     case Command::GetNumServos:
         Serial.print(F("NS "));
         Serial.print(NUM_SERVOS);
+        Serial.print('\n');
         break;
 
     case Command::GetServoParams:
@@ -386,6 +425,7 @@ void handleSerialCommand()
         {
             const auto& servo = PidServos[i];
 
+            Serial.flush();
             Serial.print(F("SP "));
             Serial.print(i);
             Serial.print(' ');
@@ -398,7 +438,7 @@ void handleSerialCommand()
             Serial.print(servo._pid._dLambda);
             Serial.print(' ');
             Serial.print(servo._setPoint);
-            Serial.println('\n');
+            Serial.print('\n');
         }
         break;
 
@@ -411,6 +451,7 @@ void handleSerialCommand()
 
             const auto& servo = PidServos[i];
 
+            Serial.flush();
             Serial.print(F("SD "));
             Serial.print(i);
             Serial.print(' ');
@@ -420,13 +461,15 @@ void handleSerialCommand()
             Serial.print(' ');
             Serial.print(servo._pid._integral);
             Serial.print(' ');
-            Serial.println(servo._pid._deltaFiltered);
+            Serial.print(servo._pid._deltaFiltered);
+            Serial.print('\n');
         }
         break;
 
     default:
         Serial.print(F("ERR: Unknown command "));
-        Serial.println(serialBuf[1]);
+        Serial.print(serialBuf[1]);
+        Serial.print('\n');
         break;
     }
 }

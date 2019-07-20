@@ -26,13 +26,19 @@
             </StackPanel.Resources>
             <TextBlock Text="COM Port:" />
             <ComboBox x:Name="PortNameComboBox" SelectedItem="{Binding PortName}" Text="COM Port"
-                      ItemsSource="{Binding ComPorts, Mode=Onetime}" />
+                      ItemsSource="{Binding ComPorts, Mode=OneWay}" />
             <CheckBox x:Name="EnabledCheckBox" IsChecked="{Binding Enabled}" Content="Regulator enabled"
                       IsEnabled="{Binding Connected, Mode=OneWay}" />
             <CheckBox x:Name="PollPidDataCheckBox" IsChecked="{Binding PollPidData}" Content="Poll PID data"
                       IsEnabled="{Binding Connected}" />
             <TextBlock Text="Delta Time:" />
             <TextBox x:Name="DeltaTimeTextBox" Text="{Binding DeltaTime, Mode=OneWay, StringFormat=F6}" IsReadOnly="true"
+                     IsEnabled="{Binding Connected}" TextAlignment="Right" />
+            <TextBlock Text="Min Delta Time:" />
+            <TextBox x:Name="MinDeltaTimeTextBox" Text="{Binding MinDt, Mode=OneWay, StringFormat=F6}" IsReadOnly="true"
+                     IsEnabled="{Binding Connected}" TextAlignment="Right" />
+            <TextBlock Text="Max Delta Time:" />
+            <TextBox x:Name="MaxDeltaTimeTextBox" Text="{Binding MaxDt, Mode=OneWay, StringFormat=F6}" IsReadOnly="true"
                      IsEnabled="{Binding Connected}" TextAlignment="Right" />
         </StackPanel>
         <DataGrid Grid.Row="0" Grid.Column="1"
