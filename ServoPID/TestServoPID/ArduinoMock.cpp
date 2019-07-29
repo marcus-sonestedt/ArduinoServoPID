@@ -3,7 +3,11 @@
 
 // ReSharper disable CppInconsistentNaming
 
-unsigned long gMicros = 0;
+namespace mock
+{
+unsigned long    gMicros = 0;
 std::vector<int> gAnalogPins(256, 0);
+}
+
 MockSerial Serial;
-MockWire Wire;
+MockWire   Wire;

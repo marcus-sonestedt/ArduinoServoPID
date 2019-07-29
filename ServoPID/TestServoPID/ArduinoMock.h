@@ -8,15 +8,19 @@ constexpr const char* F(const char* x) { return x; }
 
 // Mock globals
 
-extern unsigned long gMicros;
-inline unsigned long micros() { return gMicros; }
-inline void setMockMicros(const unsigned long value) { gMicros = value;}
+namespace mock {
 
+extern unsigned long gMicros;
 extern std::vector<int> gAnalogPins;
-inline int analogRead(const int pin) { return gAnalogPins.at(pin);}
+
+}
+inline unsigned long micros() { return mock::gMicros; }
+inline void setMockMicros(const unsigned long value) { mock::gMicros = value;}
+
+inline int analogRead(const int pin) { return mock::gAnalogPins.at(pin);}
 inline void setMockAnalogRead(const int pin, const int value)
 {
-    gAnalogPins.at(pin) = value;
+    mock::gAnalogPins.at(pin) = value;
 }
 
 template<typename T>
