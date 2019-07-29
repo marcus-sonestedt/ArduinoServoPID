@@ -79,11 +79,25 @@ public:
         dataRead.assign(str.rbegin(), str.rend());
     }
 
+    void setMockData(const std::vector<char>& data)
+    {
+        dataRead.assign(data.rbegin(), data.rend());
+    }
+
     template<typename T>
     void println(T value, int format = 3) { dataWrite << value; }
 
     template<typename T>
     void print(T value, int format = 3) { dataWrite << value; }
+
+    void flush() {}
+
+    void resetMock()
+    {
+        dataRead.clear();
+        dataWrite.clear();
+        dataWrite.str(std::string());
+    }
 
     std::vector<char> dataRead;
     std::stringstream dataWrite;

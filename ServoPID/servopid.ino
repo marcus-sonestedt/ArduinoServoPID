@@ -1,16 +1,20 @@
- #define USE_PCA9685 0 // set 0 to use Arduino to directly control servos
+#define USE_PCA9685 0 // set 0 to use Arduino to directly control servos
 
 #ifndef ARDUINO
 #include "ArduinoMock.h"
+
+namespace
+{
 #if USE_PCA9685 == 1
-#include "PCA9685Mock.h"
+    #include "PCA9685Mock.h"
 #endif
+
 #else
 #if USE_PCA9685 == 1
- #include <Wire.h>
- #include <PCA9685.h>
+     #include <Wire.h>
+     #include <PCA9685.h>
 #else
- #include <Servo.h>
+     #include <Servo.h>
 #endif
 #endif
 
@@ -84,7 +88,7 @@ public:
         return ((value * _scale) + _bias) * Range;
     }
 
-    int _pin = 0;
+    int   _pin = 0;
     float _bias = 0;
     float _scale = 1;
 };
@@ -127,7 +131,7 @@ private:
 class ArduinoServo : public Servo, public ServoBase
 {
 public:
-    void write(float angle) 
+    void write(float angle)
     {
         Servo::write(constrain(int(angle), MinAngle, MaxAngle));
     }
@@ -148,7 +152,7 @@ public:
         _servo.attach(servoPin, servoMin, servoMax);
         _pid = pid;
         _analogPin = analogPin;
-        _setPoint = 0.5f;
+        _setPoint = 90.0f;
     }
 
     void setPoint(float setPoint)
@@ -159,10 +163,10 @@ public:
     void run(const float dt)
     {
         _input = _analogPin.read();
-        
+
         if (enabled)
-          _output = _pid.regulate(_input, _setPoint, dt);
-        
+            _output = _pid.regulate(_input, _setPoint, dt);
+
         _servo.write(_output);
     }
 
@@ -171,10 +175,10 @@ public:
 #else
     ArduinoServo _servo;
 #endif
-    PID _pid;
+    PID       _pid;
     AnalogPin _analogPin;
 
-    float _setPoint = 0.5f;
+    float _setPoint = 90.0f;
     float _input = 0;
     float _output = 0;
 };
@@ -184,7 +188,7 @@ bool PidServo::enabled = true;
 ////////////////////////////////////////////////////////////////////
 
 constexpr int NUM_SERVOS = 4;
-PidServo PidServos[NUM_SERVOS];
+PidServo      PidServos[NUM_SERVOS];
 
 constexpr PidServo& FL = PidServos[0];
 constexpr PidServo& FR = PidServos[1];
@@ -244,17 +248,18 @@ void setup()
     Serial.begin(115200);
 
     // empty input buffer
-    while(Serial.available())
-      Serial.read();
-
+    while (Serial.available())
+        Serial.read();
 
     // initiate timer
     prevTime = 1e-6f * float(micros());
 }
 
-int x = 0;
+int   x = 0;
 float maxDt = 0;
 float minDt = 100;
+
+void mySerialEvent();
 
 void loop()
 {
@@ -270,23 +275,24 @@ void loop()
     maxDt = dt > maxDt ? dt : maxDt;
     minDt = dt < minDt ? dt : minDt;
 
-    if (x++ % 100 == 0) {
-      Serial.flush();
-      Serial.print(F("DT "));
-      Serial.print(dt, 6);
-      Serial.print(' ');
-      Serial.print(minDt, 6);
-      Serial.print(' ');
-      Serial.print(maxDt, 6);
-      Serial.print('\n');
-      Serial.flush();
+    if (x++ % 100 == 0)
+    {
+        Serial.flush();
+        Serial.print(F("DT "));
+        Serial.print(dt, 6);
+        Serial.print(' ');
+        Serial.print(minDt, 6);
+        Serial.print(' ');
+        Serial.print(maxDt, 6);
+        Serial.print('\n');
+        Serial.flush();
 
-      minDt = 100;
-      maxDt = 0;
+        minDt = 100;
+        maxDt = 0;
     }
 
     if (Serial.available())
-      mySerialEvent();
+        mySerialEvent();
 }
 
 enum class Command
@@ -310,65 +316,49 @@ enum class ServoParam
     InputBias
 };
 
-char serialBuf[128] = {0};
+char         serialBuf[128] = {0};
 unsigned int serialLen = 0;
 
 void handleSerialCommand();
 
 void mySerialEvent()
-{    
-    while (Serial.available() > 0 && serialLen < sizeof(serialBuf)) {
+{
+    while (Serial.available() > 0 && serialLen < sizeof serialBuf)
+    {
         serialBuf[serialLen++] = Serial.read();
 
-        if (serialLen >= 4 
-        && serialBuf[serialLen-4] == 'R'
-        && serialBuf[serialLen-3] == 'S'
-        && serialBuf[serialLen-2] == 'T'
-        && serialBuf[serialLen-1] == '\n') {
-          while(Serial.available())
-            Serial.read();
-            
-          serialLen = 0;
-          Serial.print(F("RST ACK\n"));
-          Serial.flush();
-        }        
+        if (serialLen >= 4
+            && serialBuf[serialLen - 4] == 'R'
+            && serialBuf[serialLen - 3] == 'S'
+            && serialBuf[serialLen - 2] == 'T'
+            && serialBuf[serialLen - 1] == '\n')
+        {
+            Serial.print(F("RST ACK\n"));
+            Serial.flush();
+            serialLen = 0;
+            continue;
+        }
+
+        if (serialLen >= sizeof serialBuf)
+        {
+            Serial.print(F("ERR: Command buffer overflow\n"));
+            serialLen = 0;
+            continue;
+        }
+
+        if (serialBuf[0] == char(serialLen))
+        {
+            handleSerialCommand();
+            serialLen = 0;
+        }
     }
-  
-    if (serialLen == 0)
-        return;
-
-    if (serialLen >= sizeof(serialBuf))
-    {
-        Serial.print(F("ERR: Command buffer overflow\n"));
-        serialLen = 0;
-        return;
-    }
-
-    const auto cmdLen = serialBuf[0];
-/*
-    Serial.print("Got ");
-    Serial.print(serialLen);
-    Serial.print('/');
-    Serial.println(int(cmdLen));
- */
-    // need more more data
-    if (cmdLen < serialLen)
-        return;
-
-    //Serial.println("OK");
-
-    Serial.flush();
-    handleSerialCommand();
-    Serial.flush();
-
-    serialLen = 0;
 }
 
 void handleSerialCommand()
 {
     switch (Command(serialBuf[1]))
     {
-    // len, cmd, pid#, param-id, float-value[4]
+        // len, cmd, pid#, param-id, float-value[4]
     case Command::SetServoParamFloat:
         {
             if (serialBuf[2] >= NUM_SERVOS)
@@ -379,7 +369,7 @@ void handleSerialCommand()
                 return;
             }
 
-            auto& servoPid = PidServos[serialBuf[2]];
+            auto&      servoPid = PidServos[serialBuf[2]];
             const auto value = *reinterpret_cast<float*>(serialBuf + 4);
             switch (ServoParam(serialBuf[3]))
             {
@@ -473,3 +463,8 @@ void handleSerialCommand()
         break;
     }
 }
+
+
+#ifndef ARDUINO
+} // end anonymous namespace
+#endif
