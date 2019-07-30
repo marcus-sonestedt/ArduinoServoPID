@@ -362,7 +362,7 @@ void handleSerialCommand()
             if (serialBuf[2] >= NUM_SERVOS)
             {
                 Serial.print(F("ERR: Invalid servo number "));
-                Serial.print(serialBuf[2]);
+                Serial.print(int(serialBuf[2]));
                 Serial.print('\n');
                 return;
             }
@@ -387,7 +387,7 @@ void handleSerialCommand()
                 break;
             default:
                 Serial.print(F("ERR: Unknown servo parameter "));
-                Serial.print(serialBuf[3]);
+                Serial.print(int(serialBuf[3]));
                 Serial.print('\n');
                 return;
             }
