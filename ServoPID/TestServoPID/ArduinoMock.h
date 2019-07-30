@@ -23,13 +23,13 @@ inline void setMockAnalogRead(const int pin, const int value)
     mock::gAnalogPins.at(pin) = value;
 }
 
-template<typename T>
-T constrain(const T v, const T min, const T max)
+template<typename T, typename U>
+T constrain(const T v, const U min, const U max)
 {
-    if (v < min)
-        return min;
-    if (v > max)
-        return max;
+    if (v < T(min))
+        return T(min);
+    if (v > T(max))
+        return T(max);
     return v;
 }
 
@@ -100,7 +100,7 @@ public:
     {
         dataRead.clear();
         dataWrite.clear();
-        dataWrite.str(std::string());
+        dataWrite.str({});
     }
 
     std::vector<char> dataRead;
