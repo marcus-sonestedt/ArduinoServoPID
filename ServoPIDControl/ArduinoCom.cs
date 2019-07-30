@@ -153,6 +153,8 @@ namespace ServoPIDControl
                     servo.Output = float.Parse(parts[3]);
                     servo.Integrator = float.Parse(parts[4]);
                     servo.DFiltered = float.Parse(parts[5]);
+
+                    servo.RecordTimePoint();
                 }
                 catch (Exception e)
                 {
@@ -192,7 +194,6 @@ namespace ServoPIDControl
 
                 _model = value;
 
-                // ReSharper disable once InvertIf
                 if (Model != null)
                 {
                     Model.PropertyChanged += ModelOnPropertyChanged;
@@ -248,6 +249,7 @@ namespace ServoPIDControl
                     servo.PropertyChanged += ServoOnPropertyChanged;
 
             if (e.Action == NotifyCollectionChangedAction.Reset)
+                // it's probably empty, but just in case...
                 foreach (var servo in Model.Servos)
                     servo.PropertyChanged -= ServoOnPropertyChanged;
         }

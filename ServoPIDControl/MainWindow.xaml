@@ -7,13 +7,14 @@
                       xmlns:d3="clr-namespace:InteractiveDataDisplay.WPF;assembly=mpolewaczyk.InteractiveDataDisplay.WPF"
                       xmlns:local="clr-namespace:ServoPIDControl"
                       xmlns:model="clr-namespace:ServoPIDControl.Model"
+                      xmlns:helper="clr-namespace:ServoPIDControl.Helper"
                       mc:Ignorable="d"
                       Title="Arduino Servo PID Control">
     <Window.DataContext>
         <model:ViewModel x:Name="Model" />
     </Window.DataContext>
     <Window.Resources>
-        <local:VisibilityToCheckedConverter x:Key="VisibilityToCheckedConverter" />
+        <helper:VisibilityToCheckedConverter x:Key="VisibilityToCheckedConverter" />
     </Window.Resources>
     <Grid>
         <Grid.ColumnDefinitions>

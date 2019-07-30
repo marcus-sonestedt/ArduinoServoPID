@@ -91,7 +91,7 @@
     <Compile Include="ISerialPort.cs" />
     <Compile Include="Properties\Annotations.cs" />
     <Compile Include="Model\ServoPidModel.cs" />
-    <Compile Include="VisibilityToCheckedConverter.cs" />
+    <Compile Include="Helper\VisibilityToCheckedConverter.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -140,9 +140,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Tests\" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Helper\README_NLog_WpfRichTextBox.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

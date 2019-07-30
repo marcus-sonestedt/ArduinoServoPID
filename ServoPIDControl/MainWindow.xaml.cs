@@ -92,7 +92,7 @@ namespace ServoPIDControl
                 AutoScroll = true,
                 // ReSharper disable StringLiteralTypo
                 Layout = "${processtime} [${level:uppercase=true}] " +
-                         "${logger:shortName=true}: ${message}" +
+                         "${logger:shortName=true}: ${message} " +
                          "${exception:innerFormat=tostring:maxInnerExceptionLevel=10:separator=,:format=tostring}",
                 // ReSharper restore StringLiteralTypo
             };

@@ -1,17 +1,18 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using InteractiveDataDisplay.WPF;
 using ServoPIDControl.Annotations;
 
 namespace ServoPIDControl.Model
 {
     public class ServoPidModel : INotifyPropertyChanged
     {
+        public static float TimeSeriesLengthSec = 5.0f;
+
         private float _p;
         private float _i;
         private float _d;
@@ -24,24 +25,33 @@ namespace ServoPIDControl.Model
         private float _integrator;
         private float _dFiltered;
 
+        private readonly Stopwatch _stopWatch = Stopwatch.StartNew();
+        private readonly object _timeSeriesLock = new object();
+
         public ServoPidModel(int id)
         {
             Id = id;
 
 #if DEBUG
-            Times = new ObservableCollection<float>(Enumerable.Range(0, 500).Select(i => i / 100.0f));
-            SetPoints = new ObservableCollection<float>(Enumerable.Range(id * 100, 500)
-                .Select(i => i / 100 % 2 == 0 ? 80.0f : 100.0f));
-            Inputs = new ObservableCollection<float>(Enumerable.Range(id * 100, 500)
-                .Select(i => 90 + (float) Math.Sin(i / 50.0f)));
-            Outputs = new ObservableCollection<float>(Enumerable.Range(id * 100, 500)
-                .Select(i => 90 + (float) Math.Cos(i / 50.0f)));
+            lock (_timeSeriesLock)
+            {
+                const int ts = 500;
+
+                Times = Enumerable.Range(0, ts)
+                    .Select(i => i / 100.0f).ToList();
+                SetPoints = Enumerable.Range(id * 100, ts)
+                    .Select(i => i / 100 % 2 == 0 ? 80.0f : 100.0f).ToList();
+                Inputs = Enumerable.Range(id * 100, ts)
+                    .Select(i => 90 + (float) Math.Cos(i / 20.0f) * 9).ToList();
+                Outputs = Enumerable.Range(id * 100, ts)
+                    .Select(i => 90 + (float) Math.Sin(i / 20.0f) * 5).ToList();
+            }
 #endif
         }
 
         public int Id { get; }
 
-        public float  P
+        public float P
         {
             get => _p;
             set
@@ -163,16 +173,17 @@ namespace ServoPIDControl.Model
         }
 
         // ReSharper disable MemberInitializerValueIgnored
-        public ObservableCollection<float> Times { get; } = new ObservableCollection<float>();
-        public ObservableCollection<float> SetPoints { get; } = new ObservableCollection<float>();
-        public ObservableCollection<float> Inputs { get; } = new ObservableCollection<float>();
-        public ObservableCollection<float> Outputs { get; } = new ObservableCollection<float>();
+        public List<float> Times { get; } = new List<float>();
+        public List<float> SetPoints { get; } = new List<float>();
+        public List<float> Inputs { get; } = new List<float>();
+
+        public List<float> Outputs { get; } = new List<float>();
         // ReSharper restore MemberInitializerValueIgnored
 
         public struct TimeSeries
         {
-            public ObservableCollection<float> X;
-            public ObservableCollection<float> Y;
+            public float[] X;
+            public float[] Y;
             public string Name;
         }
 
@@ -180,9 +191,17 @@ namespace ServoPIDControl.Model
         {
             get
             {
-                yield return new TimeSeries {X = Times, Y = SetPoints, Name = "SetPoint"};
-                yield return new TimeSeries {X = Times, Y = Inputs, Name = "Input"};
-                yield return new TimeSeries {X = Times, Y = Outputs, Name = "Output"};
+                lock (_timeSeriesLock)
+                {
+                    if (!Times.Any())
+                        yield break;
+
+                    var timeArray = Times.ToArray();
+
+                    yield return new TimeSeries {X = timeArray, Y = SetPoints.ToArray(), Name = "SetPoint"};
+                    yield return new TimeSeries {X = timeArray, Y = Inputs.ToArray(), Name = "Input"};
+                    yield return new TimeSeries {X = timeArray, Y = Outputs.ToArray(), Name = "Output"};
+                }
             }
         }
 
@@ -192,6 +211,25 @@ namespace ServoPIDControl.Model
         protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        public void RecordTimePoint()
+        {
+            lock (_timeSeriesLock)
+            {
+                Times.Add((float) _stopWatch.Elapsed.TotalSeconds);
+                SetPoints.Add(SetPoint);
+                Inputs.Add(Input);
+                Outputs.Add(Output);
+
+                var lastTime = Times.Last();
+                var removeCount = Times.TakeWhile(t => lastTime - t > TimeSeriesLengthSec).Count();
+
+                Times.RemoveRange(0, removeCount);
+                SetPoints.RemoveRange(0, removeCount);
+                Inputs.RemoveRange(0, removeCount);
+                Outputs.RemoveRange(0, removeCount);
+            }
         }
     }
 }

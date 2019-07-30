@@ -2,7 +2,7 @@ using System;
 using System.Windows;
 using System.Windows.Data;
 
-namespace ServoPIDControl
+namespace ServoPIDControl.Helper
 {
     public class VisibilityToCheckedConverter : IValueConverter
     {
