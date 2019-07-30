@@ -1,22 +1,24 @@
-﻿<Window x:Class="ServoPIDControl.MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:ServoPIDControl"
-        mc:Ignorable="d"
-        Title="Arduino Servo PID Control" SizeToContent="WidthAndHeight">
+﻿<controls:MetroWindow x:Class="ServoPIDControl.MainWindow"
+                      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                      xmlns:controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+                      xmlns:local="clr-namespace:ServoPIDControl"
+                      mc:Ignorable="d"
+                      Title="Arduino Servo PID Control" SizeToContent="WidthAndHeight">
     <Window.DataContext>
-        <local:ArduinoModel x:Name="Model" />
+        <local:Model x:Name="Model" />
     </Window.DataContext>
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" />
-            <ColumnDefinition Width="1*" />
+            <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
+            <RowDefinition Height="1*" />
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
+            <RowDefinition Height="1*" />
         </Grid.RowDefinitions>
         <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Vertical">
             <StackPanel.Resources>
@@ -25,29 +27,50 @@
                 </Style>
             </StackPanel.Resources>
             <TextBlock Text="COM Port:" />
-            <ComboBox x:Name="PortNameComboBox" SelectedItem="{Binding PortName}" Text="COM Port"
+            <ComboBox x:Name="PortNameComboBox" SelectedItem="{Binding ConnectedPort}" Text="COM Port"
                       ItemsSource="{Binding ComPorts, Mode=OneWay}" />
-            <CheckBox x:Name="EnabledCheckBox" IsChecked="{Binding Enabled}" Content="Regulator enabled"
+            <CheckBox x:Name="EnabledCheckBox" IsChecked="{Binding PidEnabled}" Content="Regulator enabled"
                       IsEnabled="{Binding Connected, Mode=OneWay}" />
             <CheckBox x:Name="PollPidDataCheckBox" IsChecked="{Binding PollPidData}" Content="Poll PID data"
                       IsEnabled="{Binding Connected}" />
-            <TextBlock Text="Delta Time:" />
-            <TextBox x:Name="DeltaTimeTextBox" Text="{Binding DeltaTime, Mode=OneWay, StringFormat=F6}" IsReadOnly="true"
+        </StackPanel>
+
+        <StackPanel Grid.Row="2" Grid.Column="0">
+        <TextBlock Text="Delta Time:" />
+            <TextBox x:Name="DeltaTimeTextBox" Text="{Binding DeltaTime, Mode=OneWay, StringFormat=F6}"
+                     IsReadOnly="true"
                      IsEnabled="{Binding Connected}" TextAlignment="Right" />
             <TextBlock Text="Min Delta Time:" />
-            <TextBox x:Name="MinDeltaTimeTextBox" Text="{Binding MinDt, Mode=OneWay, StringFormat=F6}" IsReadOnly="true"
+            <TextBox x:Name="MinDeltaTimeTextBox" Text="{Binding MinDt, Mode=OneWay, StringFormat=F6}"
+                     IsReadOnly="true"
                      IsEnabled="{Binding Connected}" TextAlignment="Right" />
             <TextBlock Text="Max Delta Time:" />
-            <TextBox x:Name="MaxDeltaTimeTextBox" Text="{Binding MaxDt, Mode=OneWay, StringFormat=F6}" IsReadOnly="true"
+            <TextBox x:Name="MaxDeltaTimeTextBox" Text="{Binding MaxDt, Mode=OneWay, StringFormat=F6}"
+                     IsReadOnly="true"
                      IsEnabled="{Binding Connected}" TextAlignment="Right" />
         </StackPanel>
         <DataGrid Grid.Row="0" Grid.Column="1"
-                  ItemsSource="{Binding Servos}" x:Name="ServosDataGrid" IsEnabled="{Binding Connected}">
+                  ItemsSource="{Binding Servos}" x:Name="ServosDataGrid"
+                  IsEnabled="{Binding Connected}">
             <DataGrid.Resources>
                 <Style TargetType="DataGridColumnHeader">
                     <Setter Property="MinWidth" Value="50" />
                 </Style>
             </DataGrid.Resources>
         </DataGrid>
+        <GridSplitter Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                      ResizeDirection="Rows" MinHeight="10" />
+        <RichTextBox x:Name="LogBox" Grid.Row="2" Grid.Column="1" Margin="5"
+                     MinHeight="100" MaxHeight="200" IsReadOnly="True" BorderBrush="{x:Null}" 
+                     Foreground="{x:Null}">
+            <RichTextBox.Resources>
+                <Style TargetType="{x:Type Paragraph}">
+                    <Setter Property="Margin" Value="1" />
+                </Style>
+            </RichTextBox.Resources>
+            <FlowDocument x:Uid="FlowDocument_1" FontFamily="Lucida Console" FontSize="11"
+                          LineStackingStrategy="BlockLineHeight" IsOptimalParagraphEnabled="True" 
+                          PagePadding="5,2"/>
+        </RichTextBox>
     </Grid>
-</Window>
+</controls:MetroWindow>

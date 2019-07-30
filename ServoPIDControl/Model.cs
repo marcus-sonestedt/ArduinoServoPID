@@ -1,18 +1,21 @@
 ﻿using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.IO.Ports;
+using Ports = System.IO.Ports;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows.Threading;
+using NLog;
 using ServoPIDControl.Annotations;
 
 namespace ServoPIDControl
 {
-    public class ArduinoModel : INotifyPropertyChanged, IDisposable
+    public class Model : INotifyPropertyChanged, IDisposable
     {
-        private string _portName = null;
-        private bool _enabled = true;
+        private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+
+        private string _connectedPort;
+        private bool _pidEnabled = true;
         private float _deltaTime;
         private bool _connected;
         private bool _pollPidData;
@@ -24,34 +27,36 @@ namespace ServoPIDControl
 
         public event PropertyChangedEventHandler PropertyChanged;
 
-        public ArduinoModel()
+        public Model()
         {
             for (var i = 0; i < 4; ++i)
                 Servos.Add(new ServoPidModel(i));
 
             _timer = new DispatcherTimer {Interval = TimeSpan.FromSeconds(1), IsEnabled = true};
-            _timer.Tick += (s, a) => ComPorts = SerialPort.GetPortNames().Distinct().ToArray();
+            _timer.Tick += (s, a) => ComPorts = Ports.SerialPort.GetPortNames().Distinct().ToArray();
         }
 
-        public string PortName
+        public string ConnectedPort
         {
-            get => _portName;
+            get => _connectedPort;
             set
             {
-                if (value == _portName) return;
-                _portName = value;
+                if (value == _connectedPort) return;
+                _connectedPort = value;
                 OnPropertyChanged();
+                Log.Info($"{nameof(ConnectedPort)}: {value}");
             }
         }
 
-        public bool Enabled
+        public bool PidEnabled
         {
-            get => _enabled;
+            get => _pidEnabled;
             set
             {
-                if (value == _enabled) return;
-                _enabled = value;
+                if (value == _pidEnabled) return;
+                _pidEnabled = value;
                 OnPropertyChanged();
+                Log.Info($"{nameof(PidEnabled)}: {value}");
             }
         }
 
@@ -90,6 +95,10 @@ namespace ServoPIDControl
 
                 _comPorts = value;
                 OnPropertyChanged();
+
+                Log.Info(value == null
+                    ? $"{nameof(ComPorts)}: ''"
+                    : $"{nameof(ComPorts)}: '{string.Join(", ", value)}'");
             }
         }
 
@@ -101,6 +110,7 @@ namespace ServoPIDControl
                 if (value == _connected) return;
                 _connected = value;
                 OnPropertyChanged();
+                Log.Info($"{nameof(Connected)}: {value}");
             }
         }
 

@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Specialized;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.IO.Ports;
 using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Threading;
+using NLog;
 
 namespace ServoPIDControl
 {
@@ -35,9 +35,11 @@ namespace ServoPIDControl
 
     public class ArduinoCom : IDisposable
     {
-        private SerialPort _port;
+        private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+
+        private ISerialPort _port;
         private readonly StringBuilder _readBuf = new StringBuilder();
-        private ArduinoModel _model;
+        private Model _model;
         private readonly DispatcherTimer _timer = new DispatcherTimer {Interval = TimeSpan.FromMilliseconds(250)};
         private readonly object _portLock = new object();
 
@@ -46,7 +48,7 @@ namespace ServoPIDControl
             _timer.Tick += TimerOnTick;
             _timer.Start();
 
-            MessageReceived += (s, a) => Debug.WriteLine($"Received: {a.Message}");
+            MessageReceived += (s, a) => Log.Info($"Received: {a.Message}");
         }
 
         private void TimerOnTick(object sender, EventArgs e)
@@ -94,7 +96,7 @@ namespace ServoPIDControl
                 }
                 catch (Exception e)
                 {
-                    Debug.WriteLine($"Bad DT received: {line} - {e.Message}");
+                     Log.Error($"Bad DT received: {line} - {e.Message}");
                 }
 
                 return;
@@ -109,7 +111,7 @@ namespace ServoPIDControl
 
                     if (numServos >= 33)
                     {
-                        Debug.WriteLine("Too many servos: " + numServos);
+                        Log.Error("Too many servos: " + numServos);
                         return;
                     }
                    
@@ -135,7 +137,7 @@ namespace ServoPIDControl
                 }
                 catch (Exception e)
                 {
-                    Debug.WriteLine("Bad servo data: " + line + " - " + e.Message);
+                    Log.Error("Bad servo data: " + line + " - " + e.Message);
                     return;
                 }
             }
@@ -153,7 +155,7 @@ namespace ServoPIDControl
                 }
                 catch (Exception e)
                 {
-                    Debug.WriteLine($"Bad servo data: {line} - {e.Message}");
+                    Log.Error($"Bad servo data: {line} - {e.Message}");
                     return;
                 }
             }
@@ -166,14 +168,14 @@ namespace ServoPIDControl
             }
             else
             {
-                Debug.WriteLine($"Ignored: {line}");
+                Log.Warn($"Ignored: {line}");
                 return;
             }
 
             MessageReceived?.Invoke(this, new StringEventArgs {Message = line});
         }
 
-        public ArduinoModel Model
+        public Model Model
         {
             get => _model;
             set
@@ -251,10 +253,10 @@ namespace ServoPIDControl
 
         private void ModelOnPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == null || e.PropertyName == nameof(Model.Enabled))
-                SendCommand(Command.EnableRegulator, (byte) (Model.Enabled ? 1 : 0));
+            if (e.PropertyName == null || e.PropertyName == nameof(Model.PidEnabled))
+                SendCommand(Command.EnableRegulator, (byte) (Model.PidEnabled ? 1 : 0));
 
-            if (e.PropertyName == null || e.PropertyName == nameof(Model.PortName))
+            if (e.PropertyName == null || e.PropertyName == nameof(Model.ConnectedPort))
                 ConnectPort();
 
             if (e.PropertyName == null || e.PropertyName == nameof(Model.PollPidData))
@@ -270,7 +272,7 @@ namespace ServoPIDControl
                 if (_port == null || !_port.IsOpen)
                     return;
 
-                Debug.WriteLine($"Sending {cmdData.Length}: {BitConverter.ToString(cmdData)}");
+                Log.Debug($"Sending {cmdData.Length}: {BitConverter.ToString(cmdData)}");
                 _port.Write(cmdData, 0, cmdData.Length);
             }
         }
@@ -303,21 +305,19 @@ namespace ServoPIDControl
                     }
                 }
 
-                if (Model?.PortName == null)
+                if (Model?.ConnectedPort == null)
                     return;
 
                 try
                 {
-                    _port = new SerialPort(Model.PortName)
+                    _port = new SerialPort(Model.ConnectedPort)
                     {
                         BaudRate = 115200,
-                        NewLine = "\n",
-                        ReadBufferSize = 4096,
-                        WriteBufferSize = 4096,
+                        NewLine = "\n"
                     };
                     _port.Open();
 
-                    Debug.WriteLine("Sending: RST");
+                    Log.Info("Sending: RST");
                     _port.WriteLine("RST");
                     _port.DataReceived += PortOnDataReceived;
 
