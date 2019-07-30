@@ -272,10 +272,11 @@ namespace ServoPIDControl.Helper
             if (this.MaxLines > 0)
             {
                 this.lineCount++;
+
                 if (this.lineCount > MaxLines)
                 {
-                    tr = new TextRange(rtbx.Document.ContentStart, rtbx.Document.ContentEnd);
-                    tr.Text.Remove(0, tr.Text.IndexOf('\n'));
+                    var b = rtbx.Document.Blocks.FirstBlock;
+                    rtbx.Document.Blocks.Remove(b);
                     this.lineCount--;
                 }
             }

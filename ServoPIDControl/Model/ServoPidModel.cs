@@ -205,6 +205,8 @@ namespace ServoPIDControl.Model
             }
         }
 
+        public event EventHandler TimePointRecorded;
+
         public event PropertyChangedEventHandler PropertyChanged;
 
         [NotifyPropertyChangedInvocator]
@@ -230,6 +232,8 @@ namespace ServoPIDControl.Model
                 Inputs.RemoveRange(0, removeCount);
                 Outputs.RemoveRange(0, removeCount);
             }
+
+            TimePointRecorded?.Invoke(this, EventArgs.Empty);
         }
     }
 }

@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Windows;
 using System.Windows.Threading;
 using NLog;
 using ServoPIDControl.Annotations;
@@ -34,7 +35,7 @@ namespace ServoPIDControl.Model
                 Servos.Add(new ServoPidModel(i));
 
             _timer = new DispatcherTimer {Interval = TimeSpan.FromSeconds(1), IsEnabled = true};
-            _timer.Tick += (s, a) => ComPorts = Ports.SerialPort.GetPortNames().Distinct().ToArray();
+            _timer.Tick += (s, a) => ComPorts = Ports.SerialPort.GetPortNames().Distinct().Append("Mock").ToArray();
         }
 
         public string ConnectedPort

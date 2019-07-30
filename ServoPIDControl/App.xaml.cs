@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Windows;
 using System.Windows.Threading;
 
@@ -13,7 +14,12 @@ namespace ServoPIDControl
         {
             DispatcherUnhandledException += OnDispatcherUnhandledException;
             AppDomain.CurrentDomain.UnhandledException += CurrentDomainOnUnhandledException;
+
+            MockMode = Environment.GetCommandLineArgs().Contains("--mock");
+
         }
+
+        public bool MockMode { get; set; }
 
         private static void CurrentDomainOnUnhandledException(object sender, UnhandledExceptionEventArgs e)
         {

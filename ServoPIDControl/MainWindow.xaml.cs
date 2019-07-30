@@ -43,30 +43,36 @@ namespace ServoPIDControl
                     break;
 
                 case nameof(Model.CurrentGraphServo):
-                    ChartGrid.Children.Clear();
-                    if (Model.CurrentGraphServo == null)
-                        break;
-
-                    // add each series with color based on index
-                    foreach (var (series, i) in Model.CurrentGraphServo.AllTimeSeries.Select((x, i) => (x, i)))
-                    {
-                        var lg = new LineGraph
-                        {
-                            Stroke = new SolidColorBrush(Color.FromArgb(255,
-                                (byte) ((i & 1) != 0 ? 255 : 100),
-                                (byte) ((i & 2) != 0 ? 200 : 50),
-                                (byte) (i % 4 == 0 ? 255 : 50))),
-                            Description = series.Name,
-                            ShowMarkers = false,
-                            StrokeThickness = 2,
-                        };
-                        ChartGrid.Children.Add(lg);
-                        lg.Plot(series.X, series.Y);
-                    }
-
-                    Chart.XLabelProvider = new LabelProvider();
+                    UpdateGraph();
                     break;
             }
+        }
+
+        private void UpdateGraph()
+        {
+            ChartGrid.Children.Clear();
+
+            if (Model.CurrentGraphServo == null)
+                return;
+
+            // add each series with color based on index
+            foreach (var (series, i) in Model.CurrentGraphServo.AllTimeSeries.Select((x, i) => (x, i)))
+            {
+                var lg = new LineGraph
+                {
+                    Stroke = new SolidColorBrush(Color.FromArgb(255,
+                        (byte) ((i & 1) != 0 ? 255 : 100),
+                        (byte) ((i & 2) != 0 ? 200 : 50),
+                        (byte) (i % 4 == 0 ? 255 : 50))),
+                    Description = series.Name,
+                    ShowMarkers = false,
+                    StrokeThickness = 2,
+                };
+                ChartGrid.Children.Add(lg);
+                lg.Plot(series.X, series.Y);
+            }
+
+            Chart.XLabelProvider = new LabelProvider();
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e)
@@ -87,7 +93,7 @@ namespace ServoPIDControl
             {
                 ControlName = LogBox.Name,
                 FormName = GetType().Name,
-                MaxLines = 500,
+                MaxLines = 100,
                 UseDefaultRowColoringRules = true,
                 AutoScroll = true,
                 // ReSharper disable StringLiteralTypo
@@ -97,9 +103,15 @@ namespace ServoPIDControl
                 // ReSharper restore StringLiteralTypo
             };
 
+#if DEBUG
+            var logLevel = LogLevel.Debug;
+         #else   
+            var logLevel = LogLevel.Info;
+#endif
+
             var asyncWrapper = new AsyncTargetWrapper {Name = "RichTextAsync", WrappedTarget = wpfTarget};
             LogManager.Configuration.AddTarget(asyncWrapper.Name, asyncWrapper);
-            LogManager.Configuration.LoggingRules.Insert(0, new LoggingRule("*", LogLevel.Info, asyncWrapper));
+            LogManager.Configuration.LoggingRules.Insert(0, new LoggingRule("*", logLevel, asyncWrapper));
             LogManager.ReconfigExistingLoggers();
         }
 
@@ -125,8 +137,34 @@ namespace ServoPIDControl
         private void ServosDataGrid_OnSelectedCellsChanged(object sender, SelectedCellsChangedEventArgs e)
         {
             var servo = (ServoPidModel) ServosDataGrid.SelectedCells.FirstOrDefault().Item;
-            if (servo != null)
-                Model.CurrentGraphServo = servo;
+            if (Model.CurrentGraphServo != null)
+                Model.CurrentGraphServo.TimePointRecorded -= CurrentGraphServoOnTimePointRecorded;
+
+            Model.CurrentGraphServo = servo;
+
+            if (Model.CurrentGraphServo != null)
+            {
+                servo.TimePointRecorded += CurrentGraphServoOnTimePointRecorded;
+                Tab.TabIndex = 1;
+            }
+            else
+            {
+                Tab.TabIndex = 0;
+            }
+        }
+
+        private void Tab_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (Tab.TabIndex == 0)
+                Model.CurrentGraphServo.TimePointRecorded -= CurrentGraphServoOnTimePointRecorded;
+            else if (Model.CurrentGraphServo != null && Tab.TabIndex == 1)
+                Model.CurrentGraphServo.TimePointRecorded -= CurrentGraphServoOnTimePointRecorded;
+        }
+
+        private void CurrentGraphServoOnTimePointRecorded(object sender, EventArgs e)
+        {
+            if (Tab.TabIndex == 1)
+                UpdateGraph();
         }
     }
 }
