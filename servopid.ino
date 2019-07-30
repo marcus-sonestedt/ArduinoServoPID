@@ -277,7 +277,6 @@ void loop()
 
     if (x++ % 100 == 0)
     {
-        Serial.flush();
         Serial.print(F("DT "));
         Serial.print(dt, 6);
         Serial.print(' ');
@@ -285,7 +284,6 @@ void loop()
         Serial.print(' ');
         Serial.print(maxDt, 6);
         Serial.print('\n');
-        Serial.flush();
 
         minDt = 100;
         maxDt = 0;
@@ -415,7 +413,6 @@ void handleSerialCommand()
         {
             const auto& servo = PidServos[i];
 
-            Serial.flush();
             Serial.print(F("SP "));
             Serial.print(i);
             Serial.print(' ');
@@ -441,7 +438,6 @@ void handleSerialCommand()
 
             const auto& servo = PidServos[i];
 
-            Serial.flush();
             Serial.print(F("SD "));
             Serial.print(i);
             Serial.print(' ');
