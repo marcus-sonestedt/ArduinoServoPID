@@ -369,7 +369,7 @@ void handleSerialCommand()
                 return;
             }
 
-            auto&      servoPid = PidServos[serialBuf[2]];
+            auto&      servoPid = PidServos[int(serialBuf[2])];
             const auto value = *reinterpret_cast<float*>(serialBuf + 4);
             switch (ServoParam(serialBuf[3]))
             {

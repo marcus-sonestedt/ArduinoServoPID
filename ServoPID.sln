@@ -9,8 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServoPidControl", "ServoPID
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{CC0AF209-905C-441A-B514-14BEF063E465}"
 	ProjectSection(SolutionItems) = preProject
-		PCA9684-Arduino\PCA9685.cpp = PCA9684-Arduino\PCA9685.cpp
-		PCA9684-Arduino\PCA9685.h = PCA9684-Arduino\PCA9685.h
+		LICENSE = LICENSE
+		README.md = README.md
 		servopid.ino = servopid.ino
 	EndProjectSection
 EndProject

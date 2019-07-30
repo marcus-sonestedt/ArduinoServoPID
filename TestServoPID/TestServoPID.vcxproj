@@ -162,6 +162,7 @@
     </ClCompile>
     <ClCompile Include="TestPID.cpp" />
     <ClCompile Include="TestSerial.cpp" />
+    <ClCompile Include="TestSetupAndLoop.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="README.md" />
