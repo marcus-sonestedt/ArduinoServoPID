@@ -4,19 +4,24 @@
                       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
                       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                       xmlns:controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+                      xmlns:d3="clr-namespace:InteractiveDataDisplay.WPF;assembly=mpolewaczyk.InteractiveDataDisplay.WPF"
                       xmlns:local="clr-namespace:ServoPIDControl"
+                      xmlns:model="clr-namespace:ServoPIDControl.Model"
                       mc:Ignorable="d"
-                      Title="Arduino Servo PID Control" SizeToContent="WidthAndHeight">
+                      Title="Arduino Servo PID Control">
     <Window.DataContext>
-        <local:Model x:Name="Model" />
+        <model:ViewModel x:Name="Model" />
     </Window.DataContext>
+    <Window.Resources>
+        <local:VisibilityToCheckedConverter x:Key="VisibilityToCheckedConverter" />
+    </Window.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" />
-            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="1*" />
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
-            <RowDefinition Height="1*" />
+            <RowDefinition Height="Auto" MaxHeight="400" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="1*" />
         </Grid.RowDefinitions>
@@ -36,7 +41,7 @@
         </StackPanel>
 
         <StackPanel Grid.Row="2" Grid.Column="0">
-        <TextBlock Text="Delta Time:" />
+            <TextBlock Text="Delta Time:" />
             <TextBox x:Name="DeltaTimeTextBox" Text="{Binding DeltaTime, Mode=OneWay, StringFormat=F6}"
                      IsReadOnly="true"
                      IsEnabled="{Binding Connected}" TextAlignment="Right" />
@@ -51,7 +56,7 @@
         </StackPanel>
         <DataGrid Grid.Row="0" Grid.Column="1"
                   ItemsSource="{Binding Servos}" x:Name="ServosDataGrid"
-                  IsEnabled="{Binding Connected}">
+                  SelectedCellsChanged="ServosDataGrid_OnSelectedCellsChanged">
             <DataGrid.Resources>
                 <Style TargetType="DataGridColumnHeader">
                     <Setter Property="MinWidth" Value="50" />
@@ -60,17 +65,46 @@
         </DataGrid>
         <GridSplitter Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
                       ResizeDirection="Rows" MinHeight="10" />
-        <RichTextBox x:Name="LogBox" Grid.Row="2" Grid.Column="1" Margin="5"
-                     MinHeight="100" MaxHeight="200" IsReadOnly="True" BorderBrush="{x:Null}" 
-                     Foreground="{x:Null}">
-            <RichTextBox.Resources>
-                <Style TargetType="{x:Type Paragraph}">
-                    <Setter Property="Margin" Value="1" />
-                </Style>
-            </RichTextBox.Resources>
-            <FlowDocument x:Uid="FlowDocument_1" FontFamily="Lucida Console" FontSize="11"
-                          LineStackingStrategy="BlockLineHeight" IsOptimalParagraphEnabled="True" 
-                          PagePadding="5,2"/>
-        </RichTextBox>
+        <TabControl x:Name="Tab" Grid.Row="2" Grid.Column="1" Margin="5">
+            <TabItem Header="Log">
+                <RichTextBox x:Name="LogBox"
+                             MinHeight="100" IsReadOnly="True" BorderBrush="{x:Null}"
+                             Foreground="{x:Null}">
+                    <RichTextBox.Resources>
+                        <Style TargetType="{x:Type Paragraph}">
+                            <Setter Property="Margin" Value="1" />
+                        </Style>
+                    </RichTextBox.Resources>
+                    <FlowDocument x:Uid="FlowDocument_1" FontFamily="Lucida Console" FontSize="11"
+                                  LineStackingStrategy="BlockLineHeight" IsOptimalParagraphEnabled="True"
+                                  PagePadding="5,2" />
+                </RichTextBox>
+
+            </TabItem>
+            <TabItem Header="Chart">
+                <d3:Chart x:Name="Chart" MinHeight="100">
+                    <d3:Chart.Title>
+                        <TextBlock HorizontalAlignment="Center" FontSize="18" Margin="0"
+                                   Text="{Binding Path=CurrentGraphServo.Id, StringFormat=Servo #{0} data}" />
+                    </d3:Chart.Title>
+                    <d3:Chart.LegendContent>
+                        <d3:LegendItemsPanel>
+                            <d3:LegendItemsPanel.Resources>
+                                <DataTemplate x:Key="InteractiveDataDisplay.WPF.LineGraph">
+                                    <StackPanel Orientation="Horizontal">
+                                        <CheckBox
+                                            IsChecked="{Binding Path=Visibility, Converter={StaticResource VisibilityToCheckedConverter}, Mode=TwoWay}" />
+                                        <Line Width="15" Height="15" X1="0" Y1="0" X2="15" Y2="15"
+                                              Stroke="{Binding Path=Stroke}" StrokeThickness="2" />
+                                        <TextBlock Margin="5,0,0,0" Text="{Binding Path=Description}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </d3:LegendItemsPanel.Resources>
+                        </d3:LegendItemsPanel>
+                    </d3:Chart.LegendContent>
+                    <Grid Name="ChartGrid" />
+                </d3:Chart>
+            </TabItem>
+        </TabControl>
     </Grid>
 </controls:MetroWindow>

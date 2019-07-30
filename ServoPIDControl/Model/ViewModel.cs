@@ -1,16 +1,16 @@
 ﻿using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using Ports = System.IO.Ports;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows.Threading;
 using NLog;
 using ServoPIDControl.Annotations;
+using Ports = System.IO.Ports;
 
-namespace ServoPIDControl
+namespace ServoPIDControl.Model
 {
-    public class Model : INotifyPropertyChanged, IDisposable
+    public class ViewModel : INotifyPropertyChanged, IDisposable
     {
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
@@ -24,10 +24,11 @@ namespace ServoPIDControl
         private readonly DispatcherTimer _timer;
         private float _minDt;
         private float _maxDt;
+        private ServoPidModel _currentGraphServo;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
-        public Model()
+        public ViewModel()
         {
             for (var i = 0; i < 4; ++i)
                 Servos.Add(new ServoPidModel(i));
@@ -132,6 +133,17 @@ namespace ServoPIDControl
             {
                 if (value.Equals(_maxDt)) return;
                 _maxDt = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public ServoPidModel CurrentGraphServo
+        {
+            get => _currentGraphServo;
+            set
+            {
+                if (value == _currentGraphServo) return;
+                _currentGraphServo = value;
                 OnPropertyChanged();
             }
         }

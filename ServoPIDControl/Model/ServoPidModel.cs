@@ -1,8 +1,14 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Linq;
 using System.Runtime.CompilerServices;
+using InteractiveDataDisplay.WPF;
 using ServoPIDControl.Annotations;
 
-namespace ServoPIDControl
+namespace ServoPIDControl.Model
 {
     public class ServoPidModel : INotifyPropertyChanged
     {
@@ -21,11 +27,21 @@ namespace ServoPIDControl
         public ServoPidModel(int id)
         {
             Id = id;
+
+#if DEBUG
+            Times = new ObservableCollection<float>(Enumerable.Range(0, 500).Select(i => i / 100.0f));
+            SetPoints = new ObservableCollection<float>(Enumerable.Range(id * 100, 500)
+                .Select(i => i / 100 % 2 == 0 ? 80.0f : 100.0f));
+            Inputs = new ObservableCollection<float>(Enumerable.Range(id * 100, 500)
+                .Select(i => 90 + (float) Math.Sin(i / 50.0f)));
+            Outputs = new ObservableCollection<float>(Enumerable.Range(id * 100, 500)
+                .Select(i => 90 + (float) Math.Cos(i / 50.0f)));
+#endif
         }
 
-        public int Id { get;  }
+        public int Id { get; }
 
-        public float P
+        public float  P
         {
             get => _p;
             set
@@ -143,6 +159,30 @@ namespace ServoPIDControl
                 if (value.Equals(_dFiltered)) return;
                 _dFiltered = value;
                 OnPropertyChanged();
+            }
+        }
+
+        // ReSharper disable MemberInitializerValueIgnored
+        public ObservableCollection<float> Times { get; } = new ObservableCollection<float>();
+        public ObservableCollection<float> SetPoints { get; } = new ObservableCollection<float>();
+        public ObservableCollection<float> Inputs { get; } = new ObservableCollection<float>();
+        public ObservableCollection<float> Outputs { get; } = new ObservableCollection<float>();
+        // ReSharper restore MemberInitializerValueIgnored
+
+        public struct TimeSeries
+        {
+            public ObservableCollection<float> X;
+            public ObservableCollection<float> Y;
+            public string Name;
+        }
+
+        public IEnumerable<TimeSeries> AllTimeSeries
+        {
+            get
+            {
+                yield return new TimeSeries {X = Times, Y = SetPoints, Name = "SetPoint"};
+                yield return new TimeSeries {X = Times, Y = Inputs, Name = "Input"};
+                yield return new TimeSeries {X = Times, Y = Outputs, Name = "Output"};
             }
         }
 

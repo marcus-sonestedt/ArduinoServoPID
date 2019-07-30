@@ -7,6 +7,7 @@ using System.Text;
 using System.Windows;
 using System.Windows.Threading;
 using NLog;
+using ServoPIDControl.Model;
 
 namespace ServoPIDControl
 {
@@ -39,7 +40,7 @@ namespace ServoPIDControl
 
         private ISerialPort _port;
         private readonly StringBuilder _readBuf = new StringBuilder();
-        private Model _model;
+        private ViewModel _model;
         private readonly DispatcherTimer _timer = new DispatcherTimer {Interval = TimeSpan.FromMilliseconds(250)};
         private readonly object _portLock = new object();
 
@@ -175,7 +176,7 @@ namespace ServoPIDControl
             MessageReceived?.Invoke(this, new StringEventArgs {Message = line});
         }
 
-        public Model Model
+        public ViewModel Model
         {
             get => _model;
             set
