@@ -12,3 +12,7 @@
 **/obj
 ServoPID/.vs/
 ServoPID/TestServoPID/pid_ms.csv
+TestServoPID/pid_ms.csv
+TestServoPID/.vs/
+TestServoPID/Debug/
+TestServoPID/packages/
