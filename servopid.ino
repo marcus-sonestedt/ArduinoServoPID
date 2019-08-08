@@ -1,4 +1,4 @@
-#define USE_PCA9685 0 // set 0 to use Arduino to directly control servos
+#define USE_PCA9685 1 // set 0 to use Arduino to directly control servos
 
 #ifndef ARDUINO
 #include "ArduinoMock.h"
@@ -12,7 +12,7 @@ namespace
 #else
 #if USE_PCA9685 == 1
      #include <Wire.h>
-     #include <PCA9685.h>
+     #include <Adafruit_PWMServoDriver.h>
 #else
      #include <Servo.h>
 #endif
@@ -101,7 +101,8 @@ public:
 };
 
 #if USE_PCA9685 == 1
-PCA9685 gPwmController;
+
+Adafruit_PWMServoDriver gPwmController = Adafruit_PWMServoDriver();
 
 class PCA9685Servo : public ServoBase
 {
@@ -111,29 +112,35 @@ public:
     void attach(const int pin, const int pwmMin, const int pwmMax)
     {
         _pin = pin;
-        _servoEval = PCA9685_ServoEvaluator(pwmMin, pwmMax);
+        _pwmMin = pwmMin;
+        _pwmMax = pwmMax;
     }
 
     // ReSharper disable once CppMemberFunctionMayBeConst
     void write(const float angle)
     {
         const auto cAngle = constrain(angle, float(MinAngle), float(MaxAngle));
-        const auto pwm = _servoEval.pwmForAngle(cAngle);
-        gPwmController.setChannelPWM(_pin, pwm);
+        const auto pwm = _pwmMin + (_pwmMax - _pwmMin) * cAngle / (float(MaxAngle) - float(MinAngle));
+        gPwmController.setPWM(_pin, 0, pwm);
     }
 
 private:
     uint8_t _pin = 0;
-    PCA9685_ServoEvaluator _servoEval;
+    int _pwmMin = 150;
+    int _pwmMax = 600;
 };
+
 #else
 
 class ArduinoServo : public Servo, public ServoBase
 {
 public:
+    using Servo::attach;
+
     void write(float angle)
     {
-        Servo::write(constrain(int(angle), MinAngle, MaxAngle));
+        const auto cAngle = constrain(int(angle), MinAngle, MaxAngle);
+        Servo::write(cAngle);
     }
 };
 
@@ -204,10 +211,8 @@ void setup()
     Wire.begin();                       // Wire must be started first
     Wire.setClock(400000);              // Supported baud rates are 100kHz, 400kHz, and 1000kHz
 
-    gPwmController.resetDevices();       // Software resets all PCA9685 devices on Wire line
-
-    gPwmController.init(21);              // Address pins A5-A0 set to B010101
-    gPwmController.setPWMFrequency(500); // Default is 200Hz, supports 24Hz to 1526Hz
+    gPwmController.begin();
+    gPwmController.setPWMFreq(200);
 #endif
 
     // assume servos on pin 3,5,6,9 and potentiometers on analog in 0,1,2,3
@@ -250,6 +255,8 @@ void setup()
     // empty input buffer
     while (Serial.available())
         Serial.read();
+
+    delay(10);
 
     // initiate timer
     prevTime = 1e-6f * float(micros());
