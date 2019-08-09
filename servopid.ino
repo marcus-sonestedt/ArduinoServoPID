@@ -1,21 +1,21 @@
 #define USE_PCA9685 1 // set 0 to use Arduino to directly control servos
 
-#ifndef ARDUINO
-#include "ArduinoMock.h"
-
-namespace
-{
-#if USE_PCA9685 == 1
-    #include "PCA9685Mock.h"
-#endif
-
-#else
+#ifdef ARDUINO
 #if USE_PCA9685 == 1
      #include <Wire.h>
      #include <Adafruit_PWMServoDriver.h>
 #else
      #include <Servo.h>
 #endif
+#else
+#include "TestServoPID/ArduinoMock.h"
+
+#if USE_PCA9685 == 1
+    #include "TestServoPID/AdafruitPwmServoDriverMock.h"
+#endif
+
+namespace
+{
 #endif
 
 // PID regulator, incl low-pass lambda filter on D part
@@ -121,7 +121,7 @@ public:
     {
         const auto cAngle = constrain(angle, float(MinAngle), float(MaxAngle));
         const auto pwm = _pwmMin + (_pwmMax - _pwmMin) * cAngle / (float(MaxAngle) - float(MinAngle));
-        gPwmController.setPWM(_pin, 0, pwm);
+        gPwmController.setPWM(_pin, 0, uint16_t(pwm));
     }
 
 private:

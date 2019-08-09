@@ -15,7 +15,9 @@ extern std::vector<int> gAnalogPins;
 
 }
 inline unsigned long micros() { return mock::gMicros; }
-inline void setMockMicros(const unsigned long value) { mock::gMicros = value;}
+inline void setMockMicros(const unsigned long value) { mock::gMicros = value; }
+
+inline void delay(int ms) {};
 
 inline int analogRead(const int pin) { return mock::gAnalogPins.at(pin);}
 inline void setMockAnalogRead(const int pin, const int value)
