@@ -2,8 +2,6 @@
 
 #include "AdafruitPwmServoDriverMock.h"
 
-Adafruit_PWMServoDriver::~Adafruit_PWMServoDriver() = default;
-
 void Adafruit_PWMServoDriver::setPin(uint8_t num, uint16_t val, bool invert) {
   // Clamp value between 0 and 4095 inclusive.
   val = std::min(val, (uint16_t)4095);

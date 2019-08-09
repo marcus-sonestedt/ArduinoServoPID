@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" 
+	xmlns:netfx="http://schemas.microsoft.com/wix/NetFxExtension">
+
+	<?define ServoPidControl_TargetDir = $(var.ServoPidControl.TargetDir)?>
+
+	<!-- Product name as you want it to appear in Add/Remove Programs-->
+	<?if $(var.Platform) = x64 ?>
+	<?define ProductName = "Arduino ServoPID Control (64 bit)" ?>
+	<?define Win64 = "yes" ?>
+	<?define PlatformProgramFilesFolder = "ProgramFiles64Folder" ?>
+	<?else ?>
+	<?define ProductName = "Arduino ServoPID Control" ?>
+	<?define Win64 = "no" ?>
+	<?define PlatformProgramFilesFolder = "ProgramFilesFolder" ?>
+	<?endif ?>
+
+	<?define InstallName = "$(var.ProductName) Setup" ?>
+
+	<Product Id="*" Name="ServoPidControlSetup" Language="1033" Version="!(bind.fileVersion.fil98E434A3D16D3BA191E09BFF8689F70E)" Manufacturer="Marcus Sonestedt" UpgradeCode="2e6a5032-2d70-4ecd-9af1-66c9a3ce4e4b">
+		<Package InstallerVersion="200" InstallPrivileges="elevated" InstallScope="perMachine" Platform="$(var.Platform)" Compressed="yes" Description="$(var.ProductName)" />
+
+		<MajorUpgrade AllowDowngrades="yes" Schedule="afterInstallInitialize" />
+		<MediaTemplate EmbedCab="yes" />
+
+		<Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
+		<UIRef Id="WixUI_InstallDir" />
+
+		<Property Id="INSTALLLOCATION">
+			<RegistrySearch Id="RegistrySearch" Type="raw" Root="HKLM" Win64="$(var.Win64)" Key="Software\Company\Product" Name="InstallLocation" />
+		</Property>
+
+		<Property Id="ARPHELPLINK" Value="https://github.com/marcusl/ArduinoServoPID" />
+
+		<Feature Id="ProductFeature" Title="ServoPidControlSetup" Level="1">
+			<ComponentGroupRef Id="ServoPidControl.Binaries" />
+			<ComponentGroupRef Id="ServoPidControl.Content" />
+			<ComponentGroupRef Id="ServoPidControl.Satellites" />
+			<Component Directory='INSTALLLOCATION'>
+				<RegistryValue Root='HKCU' Key='SOFTWARE\ServoPidControl' Name='InstallLocation' Value='[INSTALLLOCATION]' Type='string' />
+				<RemoveFolder Id='CleanupApplicationFolder' On='uninstall' />
+			</Component>
+		</Feature>
+
+		<!-- Not supported yet? https://github.com/wixtoolset/issues/issues/5575
+  <PropertyRef Id="NETFRAMEWORK471" />
+  <Condition Message="You must install Microsoft .NET 4.7.1">
+   <![CDATA[Installed OR NETFRAMEWORK471]]>
+  </Condition>
+  -->
+		<PropertyRef Id="NETFRAMEWORK45" />
+		<Condition Message="[ProductName] Requires .NET Framework 4.7.2 or later to be installed">
+			<![CDATA[Installed OR (NETFRAMEWORK45 AND NETFRAMEWORK45 >= "#461814")]]>			<!-- see https://docs.microsoft.com/en-us/dotnet/framework/migration-guide/how-to-determine-which-versions-are-installed -->
+		</Condition>
+
+		<InstallExecuteSequence>
+			<InstallExecute After="RemoveExistingProducts" />
+		</InstallExecuteSequence>
+	</Product>
+
+	<Fragment>
+		<Directory Id="TARGETDIR" Name="SourceDir">
+			<Directory Id="ProgramFilesFolder">
+				<Directory Id="INSTALLLOCATION" Name="$(var.InstallName)"/>
+			</Directory>
+		</Directory>
+	</Fragment>
+</Wix>
