@@ -7,11 +7,12 @@
 #else
      #include <Servo.h>
 #endif
+     #include <EEPROM.h> 
 #else
 #include "../TestServoPID/ArduinoMock.h"
 
 #if USE_PCA9685 == 1
-    #include "../TestServoPID/AdafruitPwmServoDriverMock.h"
+#include "../TestServoPID/AdafruitPwmServoDriverMock.h"
 #endif
 
 namespace
@@ -23,7 +24,7 @@ class PID
 {
 public:
     // adjust to control the amount of "energy" that the PID integrator can store
-    static const int MaxIntegratorStore = 50;
+    static  uint16_t MaxIntegratorStore;
 
     PID() = default;
 
@@ -67,11 +68,13 @@ public:
     float _prevError = 0;
 };
 
+uint16_t PID::MaxIntegratorStore = 50;
+
 // Analog input, with min/max settings
 class AnalogPin
 {
 public:
-    static constexpr float Range = 320.0f;
+    static uint16_t Range;
 
     AnalogPin() = default;
 
@@ -93,12 +96,18 @@ public:
     float _scale = 1;
 };
 
+uint16_t AnalogPin::Range = 320;
+
 class ServoBase
 {
 public:
-    static const int MinAngle = 80;
-    static const int MaxAngle = 100;
+    static int MinAngle;
+    static int MaxAngle;
 };
+
+int ServoBase::MinAngle = 80;
+int ServoBase::MaxAngle = 100;
+
 
 #if USE_PCA9685 == 1
 
@@ -116,6 +125,10 @@ public:
         _pwmMax = pwmMax;
     }
 
+    void reset()
+    {
+    }
+
     // ReSharper disable once CppMemberFunctionMayBeConst
     void write(const float angle)
     {
@@ -125,9 +138,9 @@ public:
     }
 
 private:
-    uint8_t _pin = 0;
-    int _pwmMin = 150;
-    int _pwmMax = 600;
+    uint8_t  _pin = 0;
+    uint16_t _pwmMin = 150;
+    uint16_t _pwmMax = 600;
 };
 
 #else
@@ -135,13 +148,30 @@ private:
 class ArduinoServo : public Servo, public ServoBase
 {
 public:
-    using Servo::attach;
+
+    void attach(const int pin, const int pwmMin, const int pwmMax)
+    {
+        _pin = pin;
+        _pwmMin = pwmMin;
+        _pwmMax = pwmMax;
+        reset();
+    }
 
     void write(float angle)
     {
         const auto cAngle = constrain(int(angle), MinAngle, MaxAngle);
         Servo::write(cAngle);
     }
+
+    void reset()
+    {
+        Servo::attach(_pin, _pwmMin, _pwmMax);
+    }
+
+private:
+    uint8_t _pin = 0;
+    uint16_t _pwmMin = 150;
+    uint16_t _pwmMax = 600;
 };
 
 #endif
@@ -177,6 +207,14 @@ public:
         _servo.write(_output);
     }
 
+    void reset()
+    {
+        _servo.reset();
+        _pid.reset();
+        _input = _analogPin.read();
+        _output = _setPoint;
+    }
+
 #if USE_PCA9685 == 1
     PCA9685Servo _servo;
 #else
@@ -194,60 +232,26 @@ bool PidServo::enabled = true;
 
 ////////////////////////////////////////////////////////////////////
 
-constexpr int NUM_SERVOS = 4;
-PidServo      PidServos[NUM_SERVOS];
-
-constexpr PidServo& FL = PidServos[0];
-constexpr PidServo& FR = PidServos[1];
-constexpr PidServo& RL = PidServos[2];
-constexpr PidServo& RR = PidServos[3];
+constexpr int MAX_SERVOS = 8;
+int           numServos = 4;
+PidServo      PidServos[MAX_SERVOS];
 
 float prevTime = 0;
 float dt = 0;
 
+void initServosFromEeprom();
+
 void setup()
 {
 #if USE_PCA9685
-    Wire.begin();                       // Wire must be started first
-    Wire.setClock(400000);              // Supported baud rates are 100kHz, 400kHz, and 1000kHz
+    Wire.begin();          // Wire must be started first
+    Wire.setClock(400000); // Supported baud rates are 100kHz, 400kHz, and 1000kHz
 
     gPwmController.begin();
     gPwmController.setPWMFreq(200);
 #endif
 
-    // assume servos on pin 3,5,6,9 and potentiometers on analog in 0,1,2,3
-
-    const auto p = 0.00f;
-    const auto i = 0.00f;
-    const auto d = 0.00f;
-    const auto dL = 0.1f;
-
-    FL = PidServo(
-        10, 544, 2400, // servo pin, pwm min, pwm max
-        PID(p, i, d, dL),
-        AnalogPin(0, 0, 1023) // potentiometer pin, in min, in max
-    );
-    FR = PidServo(
-        5, 544, 2400, // servo pin, pwm min, pwm max
-        PID(p, i, d, dL),
-        AnalogPin(1, 0, 1023) // potentiometer pin, in min, in max
-    );
-    RL = PidServo(
-        6, 544, 2400, // servo pin, pwm min, pwm max
-        PID(p, i, d, dL),
-        AnalogPin(2, 0, 1023) // potentiometer pin, in min, in max
-    );
-    RR = PidServo(
-        9, 544, 2400, // servo pin, pwm min, pwm max
-        PID(p, i, d, dL),
-        AnalogPin(3, 0, 1023) // potentiometer pin, in min, in max
-    );
-
-    // setPoint => where we want servo to be ([80..100])
-    FL.setPoint(90);
-    FR.setPoint(90);
-    RL.setPoint(90);
-    RR.setPoint(90);
+    initServosFromEeprom();
 
     // start serials
     Serial.begin(115200);
@@ -307,7 +311,11 @@ enum class Command
     EnableRegulator,
     GetNumServos,
     GetServoParams,
-    GetServoData
+    GetServoData,
+    SetGlobalVar,
+    GetGlobalVars,
+    LoadEeprom,
+    SaveEeprom,
 };
 
 enum class ServoParam
@@ -321,10 +329,22 @@ enum class ServoParam
     InputBias
 };
 
+enum class GlobalVar
+{
+    NumServos,
+    PidEnabled,
+    PidIntegratorMax,
+    AnalogRange,
+    ServoMin,
+    ServoMax,
+};
+
 char         serialBuf[128] = {0};
 unsigned int serialLen = 0;
 
 void handleSerialCommand();
+void loadEeprom();
+void saveEeprom();
 
 void mySerialEvent()
 {
@@ -366,7 +386,7 @@ void handleSerialCommand()
         // len, cmd, pid#, param-id, float-value[4]
     case Command::SetServoParamFloat:
         {
-            if (serialBuf[2] >= NUM_SERVOS)
+            if (serialBuf[2] >= numServos)
             {
                 Serial.print(F("ERR: Invalid servo number "));
                 Serial.print(int(serialBuf[2]));
@@ -411,12 +431,12 @@ void handleSerialCommand()
 
     case Command::GetNumServos:
         Serial.print(F("NS "));
-        Serial.print(NUM_SERVOS);
+        Serial.print(numServos);
         Serial.print('\n');
         break;
 
     case Command::GetServoParams:
-        for (auto i = 0; i < NUM_SERVOS; ++i) // NOLINT(modernize-loop-convert)
+        for (auto i = 0; i < numServos; ++i) // NOLINT(modernize-loop-convert)
         {
             const auto& servo = PidServos[i];
 
@@ -437,10 +457,10 @@ void handleSerialCommand()
         break;
 
     case Command::GetServoData:
-        for (auto i = 0; i < NUM_SERVOS; ++i)
+        for (auto i = 0; i < numServos; ++i)
         {
             // show only one servo if set
-            if (serialBuf[2] != i && serialBuf[2] < NUM_SERVOS)
+            if (serialBuf[2] != i && serialBuf[2] < numServos)
                 continue;
 
             const auto& servo = PidServos[i];
@@ -459,6 +479,71 @@ void handleSerialCommand()
         }
         break;
 
+    case Command::SetGlobalVar:
+        {
+            const auto var = static_cast<GlobalVar>(serialBuf[2]);
+            switch (var)
+            {
+            case GlobalVar::NumServos:
+                numServos = serialBuf[4];
+                for(auto i = 0; i < numServos; ++i)
+                    PidServos[i].reset();
+                break;
+            case GlobalVar::PidEnabled:
+                PidServo::enabled = serialBuf[3] != 0;
+                break;
+            case GlobalVar::PidIntegratorMax:
+                PID::MaxIntegratorStore = serialBuf[3] + (serialBuf[4] << 8);
+                break;
+            case GlobalVar::AnalogRange:
+                AnalogPin::Range = serialBuf[3] + (serialBuf[4] << 8);
+                break;
+            case GlobalVar::ServoMin: 
+                ServoBase::MinAngle = serialBuf[3] + (serialBuf[4] << 8);
+                break;
+            case GlobalVar::ServoMax:
+                ServoBase::MaxAngle = serialBuf[3] + (serialBuf[4] << 8);
+                break;
+            default:
+                Serial.print(F("ERR: Unknown global variable "));
+                Serial.print(int(serialBuf[2]));
+                Serial.print('\n');
+                return;
+            }
+            Serial.println(F("OK"));
+        }
+        break;
+    case Command::GetGlobalVars:
+        {
+            Serial.print(F("GV "));
+            Serial.print(numServos);
+            Serial.print(' ');
+            Serial.print(uint8_t(PidServo::enabled ? 1 : 0));
+            Serial.print(' ');
+            Serial.print(PID::MaxIntegratorStore);
+            Serial.print(' ');
+            Serial.print(AnalogPin::Range);
+            Serial.print(' ');
+            Serial.print(ServoBase::MinAngle);
+            Serial.print(' ');
+            Serial.print(ServoBase::MaxAngle);
+            Serial.print('\n');
+        }
+        break;
+
+    case Command::LoadEeprom:
+        loadEeprom();
+        Serial.println(F("OK"));
+        break;
+
+    case Command::SaveEeprom:
+        saveEeprom();
+        Serial.println(F("OK"));
+        break;
+
+    case Command::NoOp:
+        break;
+
     default:
         Serial.print(F("ERR: Unknown command "));
         Serial.print(serialBuf[1]);
@@ -467,6 +552,119 @@ void handleSerialCommand()
     }
 }
 
+unsigned long calcEepromCrc(int start, int end)
+{
+    const unsigned long crc_table[16] = {
+        0x00000000, 0x1db71064, 0x3b6e20c8, 0x26d930ac,
+        0x76dc4190, 0x6b6b51f4, 0x4db26158, 0x5005713c,
+        0xedb88320, 0xf00f9344, 0xd6d6a3e8, 0xcb61b38c,
+        0x9b64c2b0, 0x86d3d2d4, 0xa00ae278, 0xbdbdf21c
+    };
+
+    unsigned long crc = ~0L;
+
+    for (auto index = start; index < end; ++index)
+    {
+        crc = crc_table[(crc ^ EEPROM[index]) & 0x0f] ^ (crc >> 4);
+        crc = crc_table[(crc ^ (EEPROM[index] >> 4)) & 0x0f] ^ (crc >> 4);
+        crc = ~crc;
+    }
+    return crc;
+}
+
+void initServosDefault();
+
+void initServosFromEeprom()
+{
+    unsigned long storedCrc;
+    EEPROM.get(EEPROM.length() - sizeof(storedCrc), storedCrc);
+
+    const auto computedCrc = calcEepromCrc(0, EEPROM.length() - sizeof(storedCrc));
+
+    if (computedCrc != storedCrc)
+    {
+        initServosDefault();
+        saveEeprom();
+    }
+    else
+    {
+        loadEeprom();
+    }
+}
+
+void initServosDefault()
+{
+    numServos = 4;
+
+    const auto p = 0.00f;
+    const auto i = 0.00f;
+    const auto d = 0.00f;
+    const auto dL = 0.1f;
+
+    PidServos[0] = PidServo(
+        0, 544, 2400, // servo pin, pwm min, pwm max
+        PID(p, i, d, dL),
+        AnalogPin(0, 0, 1023) // potentiometer pin, in min, in max
+    );
+    PidServos[1] = PidServo(
+        1, 544, 2400, // servo pin, pwm min, pwm max
+        PID(p, i, d, dL),
+        AnalogPin(1, 0, 1023) // potentiometer pin, in min, in max
+    );
+    PidServos[2] = PidServo(
+        2, 544, 2400, // servo pin, pwm min, pwm max
+        PID(p, i, d, dL),
+        AnalogPin(2, 0, 1023) // potentiometer pin, in min, in max
+    );
+    PidServos[3] = PidServo(
+        3, 544, 2400, // servo pin, pwm min, pwm max
+        PID(p, i, d, dL),
+        AnalogPin(3, 0, 1023) // potentiometer pin, in min, in max
+    );
+
+    // setPoint => where we want servo to be ([80..100])
+    PidServos[0].setPoint(90);
+    PidServos[1].setPoint(90);
+    PidServos[2].setPoint(90);
+    PidServos[3].setPoint(90);
+}
+
+void loadEeprom()
+{
+    auto addr = 0;
+    EEPROM.get(0, numServos);
+    addr += sizeof(numServos);
+
+    for (auto i = 0; i < numServos; ++i)
+    {
+        EEPROM.get(addr, PidServos[i]);
+        PidServos[i].reset();
+        addr += sizeof(PidServos[i]);
+    }
+}
+
+void saveEeprom()
+{
+    auto addr = 0;
+    EEPROM.put(addr, numServos);
+    addr += sizeof(numServos);
+
+    for (auto i = 0; i < numServos; ++i)
+    {
+        EEPROM.put(addr, PidServos[i]);
+        addr += sizeof(PidServos[i]);
+    }
+
+    unsigned long crc;
+
+    // clear remaining memory
+    while (addr < int(EEPROM.length() - sizeof(crc)))
+        EEPROM.update(addr++, 0);
+
+    // calc and store crc
+    crc = calcEepromCrc(0, int(EEPROM.length() - sizeof(crc)));
+    EEPROM.put(addr, crc);
+}
 
 #ifndef ARDUINO
 } // end anonymous namespace

@@ -132,19 +132,22 @@ public:
     uint8_t read(int addr) { return _mem[addr];}
 
     void write(int addr, uint8_t value) { _mem[addr] = value; }
+    void update(int addr, uint8_t value)  { write(addr, value); }
 
     template<typename T>
-    void put(int addr, T value) { *reinterpret_cast<T*>(_mem[addr]) = t; }
+    void put(int addr, T value) { *reinterpret_cast<T*>(_mem[addr]) = value; }
 
     template<typename T>
     void get(int addr, T& value) { value = *reinterpret_cast<T*>(_mem[addr]); }
 
     uint8_t& operator[](int addr) { return _mem[addr]; }
 
-    std::array<uint8_t, 4096> _mem;
+    int length() const { return _mem.size(); }
+
+    std::array<uint8_t, 4096> _mem{};
 };
 
-MockEEPROM EEPROM;
+extern MockEEPROM EEPROM;
 
 // ReSharper restore CppInconsistentNaming
 // ReSharper restore CppMemberFunctionMayBeStatic
