@@ -1,6 +1,6 @@
 #include "pch.h"
 
-#include "../servopid.ino"
+#include "../ServoPid/servopid.ino"
 
 class SerialTest : public testing::Test
 {
