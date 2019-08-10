@@ -8,10 +8,10 @@
      #include <Servo.h>
 #endif
 #else
-#include "TestServoPID/ArduinoMock.h"
+#include "../TestServoPID/ArduinoMock.h"
 
 #if USE_PCA9685 == 1
-    #include "TestServoPID/AdafruitPwmServoDriverMock.h"
+    #include "../TestServoPID/AdafruitPwmServoDriverMock.h"
 #endif
 
 namespace
