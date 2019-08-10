@@ -19,6 +19,7 @@
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Dependencies.wxs" />
     <Compile Include="Product.wxs" />
   </ItemGroup>
   <ItemGroup>
@@ -28,8 +29,16 @@
       <Private>True</Private>
       <DoNotHarvest>
       </DoNotHarvest>
-      <RefProjectOutputGroups>Binaries;Symbols;Sources;Content;Satellites;Documents</RefProjectOutputGroups>
-      <RefTargetDir>INSTALLLOCATION</RefTargetDir>
+      <RefProjectOutputGroups>Binaries;Symbols;Sources;Content</RefProjectOutputGroups>
+      <RefTargetDir>SERVOPIDCONTROL</RefTargetDir>
+    </ProjectReference>
+    <ProjectReference Include="..\ServoPid\ServoPid.vcxproj">
+      <Name>ServoPid</Name>
+      <Project>{1fd10ce4-f14c-4475-ae3c-e64a7e7ff78b}</Project>
+      <Private>True</Private>
+      <DoNotHarvest>True</DoNotHarvest>
+      <RefProjectOutputGroups>Sources</RefProjectOutputGroups>
+      <RefTargetDir>INSTALLFOLDER</RefTargetDir>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
@@ -49,6 +58,10 @@
   <ItemGroup>
     <EmbeddedResource Include="Strings.wxl" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="GenerateDependencies.bat" />
+    <Content Include="gpl-3.0.rtf" />
+  </ItemGroup>
   <PropertyGroup>
     <EnableProjectHarvesting>True</EnableProjectHarvesting>
   </PropertyGroup>
@@ -57,15 +70,17 @@
   <Target Name="EnsureWixToolsetInstalled" Condition=" '$(WixTargetsImported)' != 'true' ">
     <Error Text="The WiX Toolset v3.11 (or newer) build tools must be installed to build this project. To download the WiX Toolset, see http://wixtoolset.org/releases/" />
   </Target>
-
- <Target Name="BeforeBuild">
+  <Target Name="BeforeBuild">
     <GetAssemblyIdentity AssemblyFiles="..\ServoPidControl\bin\$(Configuration)\ServoPidControl.exe">
       <Output TaskParameter="Assemblies" ItemName="AsmInfo" />
     </GetAssemblyIdentity>
     <CreateProperty Value="ServoPidControl Setup %(AsmInfo.Version) $(Platform) $(Configuration)">
       <Output TaskParameter="Value" PropertyName="TargetName" />
     </CreateProperty>
-</Target>
+  </Target>
+  <PropertyGroup>
+    <PreBuildEvent>call "$(ProjectDir)GenerateDependencies.bat" "$(SolutionDir)\ServoPidControl\bin\$(Configuration)\" "$(ProjectDir)Dependencies.wxs" SERVOPIDCONTROL</PreBuildEvent>
+  </PropertyGroup>
   <!--
 	To modify your build process, add your task inside one of the targets below and uncomment it.
 	Other similar extension points exist, see Wix.targets.

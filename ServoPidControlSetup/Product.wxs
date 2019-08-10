@@ -1,68 +1,80 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" 
-	xmlns:netfx="http://schemas.microsoft.com/wix/NetFxExtension">
 
-	<?define ServoPidControl_TargetDir = $(var.ServoPidControl.TargetDir)?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
+     xmlns:netfx="http://schemas.microsoft.com/wix/NetFxExtension">
 
-	<!-- Product name as you want it to appear in Add/Remove Programs-->
-	<?if $(var.Platform) = x64 ?>
-	<?define ProductName = "Arduino ServoPID Control (64 bit)" ?>
-	<?define Win64 = "yes" ?>
-	<?define PlatformProgramFilesFolder = "ProgramFiles64Folder" ?>
-	<?else ?>
-	<?define ProductName = "Arduino ServoPID Control" ?>
-	<?define Win64 = "no" ?>
-	<?define PlatformProgramFilesFolder = "ProgramFilesFolder" ?>
-	<?endif ?>
+  <?define ServoPidControl_TargetDir = $(var.ServoPidControl.TargetDir)?>
+  <?define ServoPid_ProjectDir = $(var.ServoPid.ProjectDir)?>
 
-	<?define InstallName = "$(var.ProductName) Setup" ?>
+  <?define InstallName = "Arduino ServoPID Control" ?>
 
-	<Product Id="*" Name="ServoPidControlSetup" Language="1033" Version="!(bind.fileVersion.fil98E434A3D16D3BA191E09BFF8689F70E)" Manufacturer="Marcus Sonestedt" UpgradeCode="2e6a5032-2d70-4ecd-9af1-66c9a3ce4e4b">
-		<Package InstallerVersion="200" InstallPrivileges="elevated" InstallScope="perMachine" Platform="$(var.Platform)" Compressed="yes" Description="$(var.ProductName)" />
+  <!-- Product name as you want it to appear in Add/Remove Programs-->
+  <?if $(var.Platform) = x64 ?>
+  <?define ProductName = "$(var.InstallName) (64 bit)" ?>
+  <?define Win64 = "yes" ?>
+  <?define PlatformProgramFilesFolder = "ProgramFiles64Folder" ?>
+  <?else ?>
+  <?define ProductName = "$(var.InstallName)" ?>
+  <?define Win64 = "no" ?>
+  <?define PlatformProgramFilesFolder = "ProgramFilesFolder" ?>
+  <?endif ?>
 
-		<MajorUpgrade AllowDowngrades="yes" Schedule="afterInstallInitialize" />
-		<MediaTemplate EmbedCab="yes" />
+  <Product Id="*" Name="ServoPidControlSetup" Language="1033"
+           Version="!(bind.fileVersion.fil98E434A3D16D3BA191E09BFF8689F70E)" Manufacturer="Marcus Sonestedt"
+           UpgradeCode="2e6a5032-2d70-4ecd-9af1-66c9a3ce4e4b">
+    <Package InstallerVersion="200" InstallScope="perMachine" Platform="$(var.Platform)" InstallPrivileges="elevated"
+             Compressed="yes" Description="$(var.ProductName)" />
 
-		<Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
-		<UIRef Id="WixUI_InstallDir" />
+    <MajorUpgrade AllowDowngrades="no" Schedule="afterInstallInitialize"
+                  DowngradeErrorMessage="Newer version detected. Uninstall first before downgrading."
+                  AllowSameVersionUpgrades="yes"/>
+    <MediaTemplate EmbedCab="yes" />
 
-		<Property Id="INSTALLLOCATION">
-			<RegistrySearch Id="RegistrySearch" Type="raw" Root="HKLM" Win64="$(var.Win64)" Key="Software\Company\Product" Name="InstallLocation" />
-		</Property>
+    <WixVariable Id="WixUILicenseRtf" Value="gpl-3.0.rtf" />
 
-		<Property Id="ARPHELPLINK" Value="https://github.com/marcusl/ArduinoServoPID" />
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
+    <UIRef Id="WixUI_InstallDir" />
 
-		<Feature Id="ProductFeature" Title="ServoPidControlSetup" Level="1">
-			<ComponentGroupRef Id="ServoPidControl.Binaries" />
-			<ComponentGroupRef Id="ServoPidControl.Content" />
-			<ComponentGroupRef Id="ServoPidControl.Satellites" />
-			<Component Directory='INSTALLLOCATION'>
-				<RegistryValue Root='HKCU' Key='SOFTWARE\ServoPidControl' Name='InstallLocation' Value='[INSTALLLOCATION]' Type='string' />
-				<RemoveFolder Id='CleanupApplicationFolder' On='uninstall' />
-			</Component>
-		</Feature>
+    <Property Id="ARPHELPLINK" Value="https://github.com/marcusl/ArduinoServoPID" />
 
-		<!-- Not supported yet? https://github.com/wixtoolset/issues/issues/5575
-  <PropertyRef Id="NETFRAMEWORK471" />
-  <Condition Message="You must install Microsoft .NET 4.7.1">
-   <![CDATA[Installed OR NETFRAMEWORK471]]>
-  </Condition>
-  -->
-		<PropertyRef Id="NETFRAMEWORK45" />
-		<Condition Message="[ProductName] Requires .NET Framework 4.7.2 or later to be installed">
-			<![CDATA[Installed OR (NETFRAMEWORK45 AND NETFRAMEWORK45 >= "#461814")]]>			<!-- see https://docs.microsoft.com/en-us/dotnet/framework/migration-guide/how-to-determine-which-versions-are-installed -->
-		</Condition>
+    <Feature Id="ProductFeature" Title="ServoPidControlSetup" Level="1">
+      <ComponentGroupRef Id="ServoPidControl.Binaries" />
+      <ComponentGroupRef Id="ServoPidControl.Content" />
+      <ComponentGroupRef Id="ServoPidControl.Satellites" />
+      <ComponentGroupRef Id="ServoPidControl.Sources" />
+    
+      <ComponentGroupRef Id="GeneratedDependencies"/>
 
-		<InstallExecuteSequence>
-			<InstallExecute After="RemoveExistingProducts" />
-		</InstallExecuteSequence>
-	</Product>
+      <ComponentGroupRef Id="ServoPid.Sources" />
+    </Feature>
 
-	<Fragment>
-		<Directory Id="TARGETDIR" Name="SourceDir">
-			<Directory Id="ProgramFilesFolder">
-				<Directory Id="INSTALLLOCATION" Name="$(var.InstallName)"/>
-			</Directory>
-		</Directory>
-	</Fragment>
+    <!-- v4.7.2 not supported yet? https://github.com/wixtoolset/issues/issues/5575 -->
+    <PropertyRef Id="NETFRAMEWORK45" />
+    <Condition Message="[ProductName] Requires .NET Framework 4.7.2 or later to be installed">
+      <![CDATA[Installed OR (NETFRAMEWORK45 AND NETFRAMEWORK45 >= "#461814")]]>			<!-- see https://docs.microsoft.com/en-us/dotnet/framework/migration-guide/how-to-determine-which-versions-are-installed -->
+    </Condition>
+
+    <InstallExecuteSequence>
+      <InstallExecute After="RemoveExistingProducts" />
+    </InstallExecuteSequence>
+  </Product>
+
+  <Fragment>
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="INSTALLFOLDER" Name="$(var.InstallName)">
+          <Directory Id="SERVOPID" Name="ServoPid" />
+          <Directory Id="SERVOPIDCONTROL" Name="ServoPidControl" />
+        </Directory>
+      </Directory>
+    </Directory>
+  </Fragment>
+
+  <Fragment>
+    <ComponentGroup Id="ServoPid.Sources">
+      <Component Directory="SERVOPID">
+        <File Source="$(var.ServoPid_ProjectDir)/servopid.ino" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
 </Wix>
