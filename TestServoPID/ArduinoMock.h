@@ -120,6 +120,32 @@ public:
 
 extern MockWire Wire;
 
+
+class MockEEPROM
+{
+public:
+    MockEEPROM()
+    {
+        _mem.fill(0);
+    }
+
+    uint8_t read(int addr) { return _mem[addr];}
+
+    void write(int addr, uint8_t value) { _mem[addr] = value; }
+
+    template<typename T>
+    void put(int addr, T value) { *reinterpret_cast<T*>(_mem[addr]) = t; }
+
+    template<typename T>
+    void get(int addr, T& value) { value = *reinterpret_cast<T*>(_mem[addr]); }
+
+    uint8_t& operator[](int addr) { return _mem[addr]; }
+
+    std::array<uint8_t, 4096> _mem;
+};
+
+MockEEPROM EEPROM;
+
 // ReSharper restore CppInconsistentNaming
 // ReSharper restore CppMemberFunctionMayBeStatic
 // ReSharper restore CppParameterNeverUsed
