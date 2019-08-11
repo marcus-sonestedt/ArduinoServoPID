@@ -332,10 +332,10 @@ enum class GlobalVar
 {
     NumServos,
     PidEnabled,
-    PidIntegratorMax,
-    AnalogRange,
-    ServoMin,
-    ServoMax,
+    PidMaxIntegratorStore,
+    AnalogInputRange,
+    ServoMinAngle,
+    ServoMaxAngle,
 };
 
 char         serialBuf[128] = {0};
@@ -491,16 +491,16 @@ void handleSerialCommand()
             case GlobalVar::PidEnabled:
                 PidServo::enabled = serialBuf[3] != 0;
                 break;
-            case GlobalVar::PidIntegratorMax:
+            case GlobalVar::PidMaxIntegratorStore:
                 PID::MaxIntegratorStore = serialBuf[3] + (serialBuf[4] << 8);
                 break;
-            case GlobalVar::AnalogRange:
+            case GlobalVar::AnalogInputRange:
                 AnalogPin::Range = serialBuf[3] + (serialBuf[4] << 8);
                 break;
-            case GlobalVar::ServoMin:
+            case GlobalVar::ServoMinAngle:
                 ServoBase::MinAngle = serialBuf[3] + (serialBuf[4] << 8);
                 break;
-            case GlobalVar::ServoMax:
+            case GlobalVar::ServoMaxAngle:
                 ServoBase::MaxAngle = serialBuf[3] + (serialBuf[4] << 8);
                 break;
             default:

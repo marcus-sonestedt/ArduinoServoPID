@@ -99,6 +99,8 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="ArduinoCom.cs" />
+    <Compile Include="MockSerialPort.cs" />
+    <Compile Include="Model\GlobalVarModel.cs" />
     <Compile Include="Model\ViewModel.cs" />
     <Compile Include="Helper\WpfRichTextBoxRowColoringRule.cs" />
     <Compile Include="Helper\WpfRichTextBoxTarget.cs" />
@@ -107,6 +109,7 @@
     <Compile Include="Properties\Annotations.cs" />
     <Compile Include="Model\ServoPidModel.cs" />
     <Compile Include="Helper\VisibilityToCheckedConverter.cs" />
+    <Compile Include="SerialPort.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

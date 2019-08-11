@@ -8,20 +8,25 @@ using System.Windows;
 using System.Windows.Threading;
 using NLog;
 using ServoPIDControl.Model;
+using static ServoPIDControl.Command;
 
 namespace ServoPIDControl
 {
-    internal enum Command : byte
+    public enum Command : byte
     {
         NoOp,
         SetServoParamFloat,
         EnableRegulator,
         GetNumServos,
         GetServoParams,
-        GetServoData
-    };
+        GetServoData,
+        SetGlobalVar,
+        GetGlobalVars,
+        LoadEeprom,
+        SaveEeprom,
+    }
 
-    internal enum ServoParam : byte
+    public enum ServoParam : byte
     {
         None,
         P,
@@ -31,19 +36,31 @@ namespace ServoPIDControl
         SetPoint,
         InputScale,
         InputBias
-    };
+    }
 
-
+    public enum GlobalVar : byte
+    {
+        NumServos,
+        PidEnabled,
+        PidMaxIntegratorStore,
+        AnalogInputRange,
+        ServoMinAngle,
+        ServoMaxAngle,
+    }
+    
+    /// <summary>
+    /// Communicates with Arduino over SerialPort, updating data on either side
+    /// </summary>
     public class ArduinoCom : IDisposable
     {
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+        private static readonly char[] Separators = {'\n', '\r'};
 
         private ISerialPort _port;
         private ViewModel _model;
         private readonly StringBuilder _readBuf = new StringBuilder();
         private readonly DispatcherTimer _timer = new DispatcherTimer {Interval = TimeSpan.FromMilliseconds(50)};
         private readonly object _portLock = new object();
-        private static readonly char[] Separators = {'\n', '\r'};
 
         public ArduinoCom()
         {
@@ -56,7 +73,7 @@ namespace ServoPIDControl
             if ((!_port?.IsOpen ?? false) || Model == null)
                 return;
 
-            SendCommand(Command.GetServoData, (byte) Model.Servos.Count);
+            SendCommand(GetServoData, (byte) Model.Servos.Count);
         }
 
         private void PortOnDataReceived(object sender, SerialDataReceivedEventArgs e)
@@ -69,12 +86,13 @@ namespace ServoPIDControl
                     _readBuf.Remove(0, 1);
 
                 string str;
+                var dispatcher = Application.Current.Dispatcher ??
+                                Dispatcher.CurrentDispatcher;
                 while ((str = _readBuf.ToString()).IndexOfAny(Separators) > 0)
                 {
                     var lines = str.Split(Separators, StringSplitOptions.RemoveEmptyEntries);
-
                     var line = lines.First().Trim();
-                    Application.Current.Dispatcher.InvokeAsync(() => LineReceived(line));
+                    dispatcher.InvokeAsync(() => LineReceived(line));
 
                     _readBuf.Clear();
                     _readBuf.Append(string.Join("\n", lines.Skip(1)));
@@ -106,7 +124,10 @@ namespace ServoPIDControl
 
             if (line.StartsWith("NS "))
             {
-                Application.Current.Dispatcher.Invoke(() =>
+                var dispatcher = Application.Current.Dispatcher ??
+                                 Dispatcher.CurrentDispatcher;
+
+                dispatcher.Invoke(() =>
                 {
                     if (!int.TryParse(line.Substring(3), out var numServos))
                         return;
@@ -122,7 +143,7 @@ namespace ServoPIDControl
                         Model.Servos.Add(new ServoPidModel(Model.Servos.Count));
                 });
 
-                SendCommand(Command.GetServoParams);
+                SendCommand(GetServoParams);
                 return;
             }
 
@@ -140,7 +161,7 @@ namespace ServoPIDControl
                     servo.SetPoint = float.Parse(parts[6]);
 
                     if (servoId == Model.Servos.Count - 1)
-                        SendCommand(Command.GetServoData, 0x80);
+                        SendCommand(GetServoData, 0x80);
                 }
                 catch (Exception e)
                 {
@@ -172,6 +193,28 @@ namespace ServoPIDControl
                 return;
             }
 
+            if (line.StartsWith("GV "))
+            {
+                var parts = line.Split(' ');
+                try
+                {
+                    var d = Model.GlobalVarDict;
+                    d[GlobalVar.NumServos].Value = int.Parse(parts[1]);
+                    d[GlobalVar.PidEnabled].Value = int.Parse(parts[2]);
+                    d[GlobalVar.PidMaxIntegratorStore].Value = float.Parse(parts[3]);
+                    d[GlobalVar.AnalogInputRange].Value = float.Parse(parts[4]);
+                    d[GlobalVar.ServoMinAngle].Value = float.Parse(parts[5]);
+                    d[GlobalVar.ServoMaxAngle].Value = float.Parse(parts[6]);
+                }
+                catch (Exception e)
+                {
+                    Log.Error($"Bad global variable data: {line} - {e.Message}");
+                }
+
+                return;
+            }
+
+
             if (line.StartsWith("ERR: "))
             {
                 Log.Error($"Received: {line}");
@@ -184,7 +227,7 @@ namespace ServoPIDControl
                 return;
             }
 
-            if (line == "RST ACK")
+            if (line == "RST ACK" || line == "OK")
             {
                 Log.Debug("Received: " + line);
                 return;
@@ -205,6 +248,9 @@ namespace ServoPIDControl
 
                     foreach (var s in Model.Servos)
                         s.PropertyChanged -= ServoOnPropertyChanged;
+
+                    foreach (var gv in Model.GlobalVars)
+                        gv.PropertyChanged -= GlobalVarOnPropertyChanged;
                 }
 
                 _model = value;
@@ -217,11 +263,20 @@ namespace ServoPIDControl
                     foreach (var s in Model.Servos)
                         s.PropertyChanged += ServoOnPropertyChanged;
 
+                    foreach (var gv in Model.GlobalVars)
+                        gv.PropertyChanged += GlobalVarOnPropertyChanged;
+
                     ModelOnPropertyChanged(this, new PropertyChangedEventArgs(null));
                 }
 
                 ConnectPort();
             }
+        }
+
+        private void GlobalVarOnPropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            var gv = (GlobalVarModel) sender;
+            SendCommand(SetGlobalVar, new []{(byte)gv.Var}.Concat(BitConverter.GetBytes(gv.Value)).ToArray());
         }
 
         private void ServoOnPropertyChanged(object sender, PropertyChangedEventArgs e)
@@ -272,7 +327,7 @@ namespace ServoPIDControl
         private void ModelOnPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName == null || e.PropertyName == nameof(Model.PidEnabled))
-                SendCommand(Command.EnableRegulator, (byte) (Model.PidEnabled ? 1 : 0));
+                SendCommand(EnableRegulator, (byte) (Model.PidEnabled ? 1 : 0));
 
             if (e.PropertyName == null || e.PropertyName == nameof(Model.ConnectedPort))
                 ConnectPort();
@@ -281,7 +336,7 @@ namespace ServoPIDControl
                 _timer.IsEnabled = Model.PollPidData;
         }
 
-        private void SendCommand(Command cmd, params byte[] data)
+        public void SendCommand(Command cmd, params byte[] data)
         {
             var cmdData = new[] {(byte) (data.Length + 2), (byte) cmd}.Concat(data).ToArray();
 
@@ -297,7 +352,7 @@ namespace ServoPIDControl
 
         private void SendServoParam(int servoId, ServoParam servoParam, float value)
         {
-            SendCommand(Command.SetServoParamFloat,
+            SendCommand(SetServoParamFloat,
                 new[] {(byte) servoId, (byte) servoParam}
                     .Concat(BitConverter.GetBytes(value))
                     .ToArray());
@@ -354,7 +409,8 @@ namespace ServoPIDControl
                 }
             }
 
-            SendCommand(Command.GetNumServos);
+            SendCommand(GetNumServos);
+            SendCommand(GetGlobalVars);
 
             //SendCommand(Command.EnableRegulator, (byte) (Model.Enabled ? 1 : 0));
         }

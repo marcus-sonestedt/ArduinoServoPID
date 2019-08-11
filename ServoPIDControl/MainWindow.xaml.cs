@@ -166,5 +166,15 @@ namespace ServoPIDControl
             if (Tab.TabIndex == 1)
                 UpdateGraph();
         }
+
+        private void LoadButton_Click(object sender, RoutedEventArgs e)
+        {
+            _arduinoCom.SendCommand(Command.LoadEeprom);
+        }
+
+        private void SaveButton_Click(object sender, RoutedEventArgs e)
+        {
+            _arduinoCom.SendCommand(Command.SaveEeprom);
+        }
     }
 }

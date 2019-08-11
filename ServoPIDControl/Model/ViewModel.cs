@@ -1,9 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Windows;
 using System.Windows.Threading;
 using NLog;
 using ServoPIDControl.Annotations;
@@ -33,6 +33,8 @@ namespace ServoPIDControl.Model
         {
             for (var i = 0; i < 4; ++i)
                 Servos.Add(new ServoPidModel(i));
+
+            GlobalVarDict = GlobalVars.ToDictionary(gv => gv.Var, gv => gv);
 
             _timer = new DispatcherTimer {Interval = TimeSpan.FromSeconds(1), IsEnabled = true};
             _timer.Tick += (s, a) => ComPorts = Ports.SerialPort.GetPortNames().Distinct().Append("Mock").ToArray();
@@ -148,6 +150,11 @@ namespace ServoPIDControl.Model
                 OnPropertyChanged();
             }
         }
+
+        public IReadOnlyList<GlobalVarModel> GlobalVars { get; } =
+            Enum.GetValues(typeof(GlobalVar)).Cast<GlobalVar>().Select(v => new GlobalVarModel(v)).ToList();
+
+        public IDictionary<GlobalVar, GlobalVarModel> GlobalVarDict { get; } 
 
         [NotifyPropertyChangedInvocator]
         protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)

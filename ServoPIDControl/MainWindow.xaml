@@ -41,19 +41,18 @@
                       IsEnabled="{Binding Connected}" />
         </StackPanel>
 
-        <StackPanel Grid.Row="2" Grid.Column="0">
+        <StackPanel Grid.Row="2" Grid.Column="0" IsEnabled="{Binding Connected}">
             <TextBlock Text="Delta Time:" />
             <TextBox x:Name="DeltaTimeTextBox" Text="{Binding DeltaTime, Mode=OneWay, StringFormat=F6}"
-                     IsReadOnly="true"
-                     IsEnabled="{Binding Connected}" TextAlignment="Right" />
+                     IsReadOnly="true" TextAlignment="Right" />
             <TextBlock Text="Min Delta Time:" />
             <TextBox x:Name="MinDeltaTimeTextBox" Text="{Binding MinDt, Mode=OneWay, StringFormat=F6}"
-                     IsReadOnly="true"
-                     IsEnabled="{Binding Connected}" TextAlignment="Right" />
+                     IsReadOnly="true" TextAlignment="Right" />
             <TextBlock Text="Max Delta Time:" />
             <TextBox x:Name="MaxDeltaTimeTextBox" Text="{Binding MaxDt, Mode=OneWay, StringFormat=F6}"
-                     IsReadOnly="true"
-                     IsEnabled="{Binding Connected}" TextAlignment="Right" />
+                     IsReadOnly="true" TextAlignment="Right" />
+            <Button x:Name="LoadButton" Content="LOAD EEPROM" Click="LoadButton_Click"/>
+            <Button x:Name="SaveButton" Content="SAVE EEPROM" Click="SaveButton_Click"/>
         </StackPanel>
         <DataGrid Grid.Row="0" Grid.Column="1"
                   ItemsSource="{Binding Servos}" x:Name="ServosDataGrid"
@@ -106,6 +105,9 @@
                     </d3:Chart.LegendContent>
                     <Grid Name="ChartGrid" />
                 </d3:Chart>
+            </TabItem>
+            <TabItem Header="Globals">
+                <DataGrid ItemsSource="{Binding GlobalVars}"></DataGrid>
             </TabItem>
         </TabControl>
     </Grid>
