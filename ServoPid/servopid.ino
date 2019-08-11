@@ -24,7 +24,7 @@ class PID
 {
 public:
     // adjust to control the amount of "energy" that the PID integrator can store
-    static  uint16_t MaxIntegratorStore;
+    static uint16_t MaxIntegratorStore;
 
     PID() = default;
 
@@ -78,11 +78,11 @@ public:
 
     AnalogPin() = default;
 
-    AnalogPin(int pin, int min, int max)
+    AnalogPin(int pin, uint16_t min, uint16_t max)
     {
         _pin = pin;
         _scale = 1.0f / float(max - min);
-        _bias = static_cast<float>(-min);
+        _bias = -min;
     }
 
     float read() const
@@ -91,9 +91,9 @@ public:
         return ((value * _scale) + _bias) * Range;
     }
 
-    int   _pin = 0;
-    float _bias = 0;
-    float _scale = 1;
+    float    _scale = 1;
+    int16_t _bias = 0;
+    uint8_t  _pin = 0;
 };
 
 uint16_t AnalogPin::Range = 320;
@@ -409,7 +409,7 @@ void handleSerialCommand()
                 break;
             case ServoParam::InputScale: servoPid._analogPin._scale = value;
                 break;
-            case ServoParam::InputBias: servoPid._analogPin._bias = value;
+            case ServoParam::InputBias: servoPid._analogPin._bias = int16_t(value);
                 break;
             default:
                 Serial.print(F("ERR: Unknown servo parameter "));
@@ -485,7 +485,7 @@ void handleSerialCommand()
             {
             case GlobalVar::NumServos:
                 numServos = serialBuf[4];
-                for(auto i = 0; i < numServos; ++i)
+                for (auto i = 0; i < numServos; ++i)
                     PidServos[i].reset();
                 break;
             case GlobalVar::PidEnabled:
@@ -497,7 +497,7 @@ void handleSerialCommand()
             case GlobalVar::AnalogRange:
                 AnalogPin::Range = serialBuf[3] + (serialBuf[4] << 8);
                 break;
-            case GlobalVar::ServoMin: 
+            case GlobalVar::ServoMin:
                 ServoBase::MinAngle = serialBuf[3] + (serialBuf[4] << 8);
                 break;
             case GlobalVar::ServoMax:
