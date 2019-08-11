@@ -135,14 +135,14 @@ public:
     void update(int addr, uint8_t value)  { write(addr, value); }
 
     template<typename T>
-    void put(int addr, T value) { *reinterpret_cast<T*>(_mem[addr]) = value; }
+    void put(int addr, T value) { reinterpret_cast<T&>(_mem[addr]) = value; }
 
     template<typename T>
-    void get(int addr, T& value) { value = *reinterpret_cast<T*>(_mem[addr]); }
+    void get(int addr, T& value) { value = reinterpret_cast<const T&>(_mem[addr]); }
 
     uint8_t& operator[](int addr) { return _mem[addr]; }
 
-    int length() const { return _mem.size(); }
+    unsigned int length() const { return _mem.size(); }
 
     std::array<uint8_t, 4096> _mem{};
 };

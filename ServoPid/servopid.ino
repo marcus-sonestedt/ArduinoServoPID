@@ -137,7 +137,6 @@ public:
         gPwmController.setPWM(_pin, 0, uint16_t(pwm));
     }
 
-private:
     uint8_t  _pin = 0;
     uint16_t _pwmMin = 150;
     uint16_t _pwmMax = 600;
@@ -627,6 +626,9 @@ void initServosDefault()
     PidServos[1].setPoint(90);
     PidServos[2].setPoint(90);
     PidServos[3].setPoint(90);
+
+    for (auto i = 0; i < numServos; ++i)
+        PidServos[i].reset();
 }
 
 void loadEeprom()

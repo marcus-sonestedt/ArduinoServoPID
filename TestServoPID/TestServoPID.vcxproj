@@ -163,6 +163,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="AdafruitPwmServoDriverMock.cpp" />
+    <ClCompile Include="TestEeprom.cpp" />
     <ClCompile Include="TestPID.cpp" />
     <ClCompile Include="TestSerial.cpp" />
     <ClCompile Include="TestSetupAndLoop.cpp" />

@@ -39,6 +39,9 @@
     <ClCompile Include="AdafruitPwmServoDriverMock.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="TestEeprom.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="README.md" />
