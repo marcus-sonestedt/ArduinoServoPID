@@ -142,7 +142,7 @@ public:
 
     uint8_t& operator[](int addr) { return _mem[addr]; }
 
-    unsigned int length() const { return _mem.size(); }
+    constexpr unsigned int length() const { return _mem.size(); }
 
     std::array<uint8_t, 4096> _mem{};
 };

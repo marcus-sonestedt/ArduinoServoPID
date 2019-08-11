@@ -176,5 +176,10 @@ namespace ServoPIDControl
         {
             _arduinoCom.SendCommand(Command.SaveEeprom);
         }
+
+        private void ResetButton_Click(object sender, RoutedEventArgs e)
+        {
+            _arduinoCom.SendCommand(Command.ResetToDefault);
+        }
     }
 }

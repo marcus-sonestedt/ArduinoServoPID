@@ -91,9 +91,9 @@ public:
         return ((value * _scale) + _bias) * Range;
     }
 
-    float    _scale = 1;
+    float   _scale = 1;
     int16_t _bias = 0;
-    uint8_t  _pin = 0;
+    uint8_t _pin = 0;
 };
 
 uint16_t AnalogPin::Range = 320;
@@ -101,13 +101,12 @@ uint16_t AnalogPin::Range = 320;
 class ServoBase
 {
 public:
-    static int MinAngle;
-    static int MaxAngle;
+    static uint16_t MinAngle;
+    static uint16_t MaxAngle;
 };
 
-int ServoBase::MinAngle = 80;
-int ServoBase::MaxAngle = 100;
-
+uint16_t ServoBase::MinAngle = 80;
+uint16_t ServoBase::MaxAngle = 100;
 
 #if USE_PCA9685 == 1
 
@@ -240,8 +239,12 @@ float dt = 0;
 
 void initServosFromEeprom();
 
+int crcAddress = 0;
+
 void setup()
 {
+    crcAddress = int(EEPROM.length() - sizeof(unsigned long)); 
+
 #if USE_PCA9685
     Wire.begin();          // Wire must be started first
     Wire.setClock(400000); // Supported baud rates are 100kHz, 400kHz, and 1000kHz
@@ -315,6 +318,7 @@ enum class Command
     GetGlobalVars,
     LoadEeprom,
     SaveEeprom,
+    ResetToDefault,
 };
 
 enum class ServoParam
@@ -342,8 +346,9 @@ char         serialBuf[128] = {0};
 unsigned int serialLen = 0;
 
 void handleSerialCommand();
-void loadEeprom();
+bool loadEeprom();
 void saveEeprom();
+void resetToDefaultValues();
 
 void mySerialEvent()
 {
@@ -481,27 +486,32 @@ void handleSerialCommand()
     case Command::SetGlobalVar:
         {
             const auto var = static_cast<GlobalVar>(serialBuf[2]);
+            const auto value = *reinterpret_cast<float*>(serialBuf + 4);
+
             switch (var)
             {
             case GlobalVar::NumServos:
-                numServos = serialBuf[4];
-                for (auto i = 0; i < numServos; ++i)
+                numServos = int(value);
+                for (auto i = 0; i < numServos; ++i) {
+                    PidServos[i] = PidServo();
                     PidServos[i].reset();
+                }
+                PidServo::enabled = false;
                 break;
             case GlobalVar::PidEnabled:
-                PidServo::enabled = serialBuf[3] != 0;
+                PidServo::enabled = value != 0;
                 break;
             case GlobalVar::PidMaxIntegratorStore:
-                PID::MaxIntegratorStore = serialBuf[3] + (serialBuf[4] << 8);
+                PID::MaxIntegratorStore = uint16_t(value);
                 break;
             case GlobalVar::AnalogInputRange:
-                AnalogPin::Range = serialBuf[3] + (serialBuf[4] << 8);
+                AnalogPin::Range = uint16_t(value);
                 break;
             case GlobalVar::ServoMinAngle:
-                ServoBase::MinAngle = serialBuf[3] + (serialBuf[4] << 8);
+                ServoBase::MinAngle = uint16_t(value);
                 break;
             case GlobalVar::ServoMaxAngle:
-                ServoBase::MaxAngle = serialBuf[3] + (serialBuf[4] << 8);
+                ServoBase::MaxAngle = uint16_t(value);
                 break;
             default:
                 Serial.print(F("ERR: Unknown global variable "));
@@ -509,15 +519,14 @@ void handleSerialCommand()
                 Serial.print('\n');
                 return;
             }
-            Serial.println(F("OK"));
         }
-        break;
+        // fallthrough on GV update
     case Command::GetGlobalVars:
         {
             Serial.print(F("GV "));
             Serial.print(numServos);
             Serial.print(' ');
-            Serial.print(uint8_t(PidServo::enabled ? 1 : 0));
+            Serial.print(PidServo::enabled ? 1 : 0);
             Serial.print(' ');
             Serial.print(PID::MaxIntegratorStore);
             Serial.print(' ');
@@ -541,6 +550,10 @@ void handleSerialCommand()
         break;
 
     case Command::NoOp:
+        break;
+
+    case Command::ResetToDefault:
+        resetToDefaultValues();
         break;
 
     default:
@@ -571,27 +584,16 @@ unsigned long calcEepromCrc(int start, int end)
     return crc;
 }
 
-void initServosDefault();
-
 void initServosFromEeprom()
 {
-    unsigned long storedCrc;
-    EEPROM.get(EEPROM.length() - sizeof(storedCrc), storedCrc);
+    if (loadEeprom())
+        return;
 
-    const auto computedCrc = calcEepromCrc(0, EEPROM.length() - sizeof(storedCrc));
-
-    if (computedCrc != storedCrc)
-    {
-        initServosDefault();
-        saveEeprom();
-    }
-    else
-    {
-        loadEeprom();
-    }
+    resetToDefaultValues();
+    saveEeprom();
 }
 
-void initServosDefault()
+void resetToDefaultValues()
 {
     numServos = 4;
 
@@ -629,43 +631,77 @@ void initServosDefault()
 
     for (auto i = 0; i < numServos; ++i)
         PidServos[i].reset();
+
+    PidServo::enabled = false;
+    PID::MaxIntegratorStore = 50;
+    AnalogPin::Range = 320;
+    ServoBase::MinAngle = 80;
+    ServoBase::MaxAngle = 100;
+
 }
 
-void loadEeprom()
+template <typename T>
+void eepromPutInc(int& addr, const T value)
 {
+    EEPROM.put(addr, value);
+    addr += sizeof(T);
+}
+
+template <typename T>
+void eepromGetInc(int& addr, T& value)
+{
+    EEPROM.get(addr, value);
+    addr += sizeof(T);
+}
+
+
+bool loadEeprom()
+{
+    unsigned long storedCrc;
+    EEPROM.get(crcAddress, storedCrc);
+
+    const auto computedCrc = calcEepromCrc(0, crcAddress);
+
+    if (computedCrc != storedCrc)
+        return false;
+
     auto addr = 0;
-    EEPROM.get(0, numServos);
-    addr += sizeof(numServos);
+    eepromGetInc(addr, numServos);
+    eepromGetInc(addr, PidServo::enabled);
+    eepromGetInc(addr, PID::MaxIntegratorStore);
+    eepromGetInc(addr, AnalogPin::Range);
+    eepromGetInc(addr, ServoBase::MinAngle);
+    eepromGetInc(addr, ServoBase::MaxAngle);
 
     for (auto i = 0; i < numServos; ++i)
     {
-        EEPROM.get(addr, PidServos[i]);
+        eepromGetInc(addr, PidServos[i]);
         PidServos[i].reset();
-        addr += sizeof(PidServos[i]);
     }
+
+    return true;
 }
 
 void saveEeprom()
 {
     auto addr = 0;
-    EEPROM.put(addr, numServos);
-    addr += sizeof(numServos);
+    eepromPutInc(addr, numServos);
+    eepromPutInc(addr, PidServo::enabled);
+    eepromPutInc(addr, PID::MaxIntegratorStore);
+    eepromPutInc(addr, AnalogPin::Range);
+    eepromPutInc(addr, ServoBase::MinAngle);
+    eepromPutInc(addr, ServoBase::MaxAngle);
 
     for (auto i = 0; i < numServos; ++i)
-    {
-        EEPROM.put(addr, PidServos[i]);
-        addr += sizeof(PidServos[i]);
-    }
+        eepromPutInc(addr, PidServos[i]);
 
-    unsigned long crc;
-
-    // clear remaining memory
-    while (addr < int(EEPROM.length() - sizeof(crc)))
+    // clear remaining memory (write if not zero)
+    while (addr < crcAddress)
         EEPROM.update(addr++, 0);
 
     // calc and store crc
-    crc = calcEepromCrc(0, int(EEPROM.length() - sizeof(crc)));
-    EEPROM.put(addr, crc);
+    const auto newCrc = calcEepromCrc(0, crcAddress);
+    EEPROM.put(crcAddress, newCrc);
 }
 
 #ifndef ARDUINO

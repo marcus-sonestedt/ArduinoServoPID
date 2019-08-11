@@ -51,6 +51,7 @@
             <TextBlock Text="Max Delta Time:" />
             <TextBox x:Name="MaxDeltaTimeTextBox" Text="{Binding MaxDt, Mode=OneWay, StringFormat=F6}"
                      IsReadOnly="true" TextAlignment="Right" />
+            <Button x:Name="ResetButton" Content="RESET DATA" Click="ResetButton_Click"/>
             <Button x:Name="LoadButton" Content="LOAD EEPROM" Click="LoadButton_Click"/>
             <Button x:Name="SaveButton" Content="SAVE EEPROM" Click="SaveButton_Click"/>
         </StackPanel>

@@ -37,7 +37,7 @@ TEST(TestEEPROM, TestSaveComputesCrc)
 
 TEST(TestEEPROM, TestDefaultInit)
 {
-    initServosDefault();
+    resetToDefaultValues();
     const std::vector<PidServo> defaultServos(&PidServos[0], &PidServos[numServos]);
 
     EEPROM._mem.fill(0xFF);

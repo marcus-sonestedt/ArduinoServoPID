@@ -24,6 +24,7 @@ namespace ServoPIDControl
         GetGlobalVars,
         LoadEeprom,
         SaveEeprom,
+        ResetToDefault,
     }
 
     public enum ServoParam : byte
