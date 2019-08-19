@@ -2,16 +2,16 @@
 
 #ifdef ARDUINO
 #if USE_PCA9685 == 1
-     #include <Wire.h>
-     #include <Adafruit_PWMServoDriver.h>
+#include <Wire.h>
+#include <Adafruit_PWMServoDriver.h>
 #else
-     #include <Servo.h>
+#include <Servo.h>
 #endif
 #else
 #include "../TestServoPID/ArduinoMock.h"
 
 #if USE_PCA9685 == 1
-    #include "../TestServoPID/AdafruitPwmServoDriverMock.h"
+#include "../TestServoPID/AdafruitPwmServoDriverMock.h"
 #endif
 
 namespace
@@ -23,7 +23,7 @@ class PID
 {
 public:
     // adjust to control the amount of "energy" that the PID integrator can store
-    static const int MaxIntegratorStore = 50;
+    static const int MaxIntegratorStore = 5000;
 
     PID() = default;
 
@@ -46,7 +46,7 @@ public:
 
     float regulate(float currentValue, float requestedValue, float dt)
     {
-        const auto error = requestedValue - currentValue;
+        const auto error = currentValue - requestedValue;
         const auto errorDelta = (error - _prevError) / dt;
 
         _prevError = error;
@@ -84,8 +84,9 @@ public:
 
     float read() const
     {
-        const auto value = float(analogRead(_pin));
-        return ((value * _scale) + _bias) * Range;
+        const auto value = analogRead(_pin);
+        const auto angle = ((value * _scale) + _bias) * Range;
+        return angle;
     }
 
     int   _pin = 0;
@@ -120,8 +121,9 @@ public:
     void write(const float angle)
     {
         const auto cAngle = constrain(angle, float(MinAngle), float(MaxAngle));
-        const auto pwm = _pwmMin + (_pwmMax - _pwmMin) * cAngle / (float(MaxAngle) - float(MinAngle));
-        gPwmController.setPWM(_pin, 0, uint16_t(pwm));
+        const auto pwm = _pwmMin + (_pwmMax - _pwmMin) * ((cAngle - MinAngle) / (float(MaxAngle) - float(MinAngle)));
+        const auto cPwm = constrain(pwm, _pwmMin, _pwmMax);
+        gPwmController.setPWM(_pin, 0, uint16_t(cPwm));
     }
 
 private:
@@ -208,8 +210,8 @@ float dt = 0;
 void setup()
 {
 #if USE_PCA9685
-    Wire.begin();                       // Wire must be started first
-    Wire.setClock(400000);              // Supported baud rates are 100kHz, 400kHz, and 1000kHz
+    //Wire.begin();                       // Wire must be started first
+    //Wire.setClock(400000);              // Supported baud rates are 100kHz, 400kHz, and 1000kHz
 
     gPwmController.begin();
     gPwmController.setPWMFreq(200);
@@ -223,22 +225,22 @@ void setup()
     const auto dL = 0.1f;
 
     FL = PidServo(
-        10, 544, 2400, // servo pin, pwm min, pwm max
+        0, 544, 2400, // servo pin, pwm min, pwm max
         PID(p, i, d, dL),
         AnalogPin(0, 0, 1023) // potentiometer pin, in min, in max
     );
     FR = PidServo(
-        5, 544, 2400, // servo pin, pwm min, pwm max
+        1, 544, 2400, // servo pin, pwm min, pwm max
         PID(p, i, d, dL),
         AnalogPin(1, 0, 1023) // potentiometer pin, in min, in max
     );
     RL = PidServo(
-        6, 544, 2400, // servo pin, pwm min, pwm max
+        2, 544, 2400, // servo pin, pwm min, pwm max
         PID(p, i, d, dL),
         AnalogPin(2, 0, 1023) // potentiometer pin, in min, in max
     );
     RR = PidServo(
-        9, 544, 2400, // servo pin, pwm min, pwm max
+        3, 544, 2400, // servo pin, pwm min, pwm max
         PID(p, i, d, dL),
         AnalogPin(3, 0, 1023) // potentiometer pin, in min, in max
     );
@@ -322,7 +324,7 @@ enum class ServoParam
     InputBias
 };
 
-char         serialBuf[128] = {0};
+char         serialBuf[128] = { 0 };
 unsigned int serialLen = 0;
 
 void handleSerialCommand();
@@ -364,7 +366,7 @@ void handleSerialCommand()
 {
     switch (Command(serialBuf[1]))
     {
-        // len, cmd, pid#, param-id, float-value[4]
+    // len, cmd, pid#, param-id, float-value[4]
     case Command::SetServoParamFloat:
         {
             if (serialBuf[2] >= NUM_SERVOS)
@@ -375,7 +377,7 @@ void handleSerialCommand()
                 return;
             }
 
-            auto&      servoPid = PidServos[int(serialBuf[2])];
+            auto& servoPid = PidServos[int(serialBuf[2])];
             const auto value = *reinterpret_cast<float*>(serialBuf + 4);
             switch (ServoParam(serialBuf[3]))
             {
@@ -467,7 +469,6 @@ void handleSerialCommand()
         break;
     }
 }
-
 
 #ifndef ARDUINO
 } // end anonymous namespace
