@@ -312,6 +312,7 @@ enum class Command
 
 enum class ServoParam
 {
+    None,
     P,
     I,
     D,
