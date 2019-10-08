@@ -129,14 +129,14 @@ namespace ServoPIDControl
             DataReceived?.BeginInvoke(this, SerialCharsReceivedEventArgs, null, null);
         }
 
-        private static readonly ConstructorInfo SerialDataReceivedEventArgsConstructorInfo
+        internal static readonly ConstructorInfo SerialDataReceivedEventArgsConstructorInfo
             = typeof(System.IO.Ports.SerialDataReceivedEventArgs).GetConstructor(
                 BindingFlags.NonPublic | BindingFlags.Instance,
                 null,
                 new[] {typeof(System.IO.Ports.SerialData)},
                 null);
 
-        private static readonly System.IO.Ports.SerialDataReceivedEventArgs SerialCharsReceivedEventArgs =
+        internal static readonly System.IO.Ports.SerialDataReceivedEventArgs SerialCharsReceivedEventArgs =
             (System.IO.Ports.SerialDataReceivedEventArgs) SerialDataReceivedEventArgsConstructorInfo.Invoke(new object[]
                 {System.IO.Ports.SerialData.Chars});
     }

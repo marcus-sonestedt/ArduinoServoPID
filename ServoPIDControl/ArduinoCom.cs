@@ -8,6 +8,7 @@ using System.Windows;
 using System.Windows.Threading;
 using NLog;
 using ServoPIDControl.Model;
+using ServoPIDControl.Serial;
 using static ServoPIDControl.Command;
 
 namespace ServoPIDControl
@@ -48,7 +49,7 @@ namespace ServoPIDControl
         ServoMinAngle,
         ServoMaxAngle,
     }
-    
+
     /// <summary>
     /// Communicates with Arduino over SerialPort, updating data on either side
     /// </summary>
@@ -83,12 +84,18 @@ namespace ServoPIDControl
             {
                 _readBuf.Append(_port.ReadExisting());
 
-                while (_readBuf[0] == '\n')
+                while (_readBuf.Length > 0 && _readBuf[0] == '\n')
                     _readBuf.Remove(0, 1);
+
+                if (_readBuf.Length == 0)
+                {
+                    Log.Warn("Data received triggered but no data read?");
+                    return;
+                }
 
                 string str;
                 var dispatcher = Application.Current.Dispatcher ??
-                                Dispatcher.CurrentDispatcher;
+                                 Dispatcher.CurrentDispatcher;
                 while ((str = _readBuf.ToString()).IndexOfAny(Separators) > 0)
                 {
                     var lines = str.Split(Separators, StringSplitOptions.RemoveEmptyEntries);
@@ -277,7 +284,7 @@ namespace ServoPIDControl
         private void GlobalVarOnPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             var gv = (GlobalVarModel) sender;
-            SendCommand(SetGlobalVar, new []{(byte)gv.Var}.Concat(BitConverter.GetBytes(gv.Value)).ToArray());
+            SendCommand(SetGlobalVar, new[] {(byte) gv.Var}.Concat(BitConverter.GetBytes(gv.Value)).ToArray());
         }
 
         private void ServoOnPropertyChanged(object sender, PropertyChangedEventArgs e)
@@ -386,13 +393,22 @@ namespace ServoPIDControl
 
                 try
                 {
-                    _port = Model.ConnectedPort == "Mock"
-                        ? CreateMockPort()
-                        : new SerialPort(Model.ConnectedPort)
-                        {
-                            BaudRate = 115200,
-                            NewLine = "\n"
-                        };
+                    switch (Model.ConnectedPort)
+                    {
+                        case "Mock":
+                            _port = CreateMockPort();
+                            break;
+                        case "Simulator":
+                            _port = CreateSimulatorPort();
+                            break;
+                        default:
+                            _port = new SerialPort(Model.ConnectedPort)
+                            {
+                                BaudRate = 115200,
+                                NewLine = "\n"
+                            };
+                            break;
+                    }
 
                     _port.Open();
 
@@ -414,6 +430,12 @@ namespace ServoPIDControl
             SendCommand(GetGlobalVars);
 
             //SendCommand(Command.EnableRegulator, (byte) (Model.Enabled ? 1 : 0));
+        }
+
+        private ISerialPort CreateSimulatorPort()
+        {
+             var sim = new ArduinoSimulator();
+             return sim.Serial;
         }
 
         private ISerialPort CreateMockPort()

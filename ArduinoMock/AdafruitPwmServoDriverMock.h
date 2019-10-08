@@ -21,7 +21,7 @@
 // ReSharper disable CppMemberFunctionMayBeStatic
 
 
-class Adafruit_PWMServoDriver
+class MOCK_API Adafruit_PWMServoDriver
 {
 public:
     Adafruit_PWMServoDriver(uint8_t addr = 0x40, void* I2C = nullptr)

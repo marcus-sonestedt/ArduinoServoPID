@@ -37,7 +37,8 @@ namespace ServoPIDControl.Model
             GlobalVarDict = GlobalVars.ToDictionary(gv => gv.Var, gv => gv);
 
             _timer = new DispatcherTimer {Interval = TimeSpan.FromSeconds(1), IsEnabled = true};
-            _timer.Tick += (s, a) => ComPorts = Ports.SerialPort.GetPortNames().Distinct().Append("Mock").ToArray();
+            _timer.Tick += (s, a) => ComPorts = Ports.SerialPort.GetPortNames().Distinct()
+                .Append("Mock").Append("Simulator").ToArray();
         }
 
         public string ConnectedPort

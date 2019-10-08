@@ -9,10 +9,10 @@
 #endif
      #include <EEPROM.h> 
 #else
-#include "../TestServoPID/ArduinoMock.h"
+#include "../ArduinoMock/ArduinoMock.h"
 
 #if USE_PCA9685 == 1
-#include "../TestServoPID/AdafruitPwmServoDriverMock.h"
+#include "../ArduinoMock/AdafruitPwmServoDriverMock.h"
 #endif
 
 namespace

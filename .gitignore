@@ -19,3 +19,8 @@ TestServoPID/packages/
 packages
 Release 
 MigrationBackup/
+/ArduinoMock/Debug
+/ArduinoMock/Win32/Debug
+/ArduinoMock/x64/Debug
+/TestServoPID/Win32/Debug
+/TestServoPID/x64/Debug

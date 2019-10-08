@@ -15,9 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ArduinoMock.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="TestPID.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -27,16 +24,10 @@
     <ClCompile Include="pch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="PCA9685Mock.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="TestSerial.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="TestSetupAndLoop.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="AdafruitPwmServoDriverMock.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="TestEeprom.cpp">
@@ -47,16 +38,7 @@
     <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ArduinoMock.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="pch.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="PCA9685Mock.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="AdafruitPwmServoDriverMock.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

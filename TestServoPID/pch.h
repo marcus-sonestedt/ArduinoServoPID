@@ -8,3 +8,5 @@
 #include <sstream>
 #include <array>
 #include <fstream>
+
+#include "../ArduinoMock/pch.h"

@@ -99,17 +99,19 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="ArduinoCom.cs" />
-    <Compile Include="MockSerialPort.cs" />
+    <Compile Include="ArduinoSimulator.cs" />
+    <Compile Include="Serial\ArduinoCppMockSerial.cs" />
+    <Compile Include="Serial\MockSerialPort.cs" />
     <Compile Include="Model\GlobalVarModel.cs" />
     <Compile Include="Model\ViewModel.cs" />
     <Compile Include="Helper\WpfRichTextBoxRowColoringRule.cs" />
     <Compile Include="Helper\WpfRichTextBoxTarget.cs" />
     <Compile Include="Helper\WpfRichTextBoxWordColoringRule.cs" />
-    <Compile Include="ISerialPort.cs" />
+    <Compile Include="Serial\ISerialPort.cs" />
     <Compile Include="Properties\Annotations.cs" />
     <Compile Include="Model\ServoPidModel.cs" />
     <Compile Include="Helper\VisibilityToCheckedConverter.cs" />
-    <Compile Include="SerialPort.cs" />
+    <Compile Include="Serial\SerialPort.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
