@@ -1,7 +1,7 @@
 ﻿using System;
 using Ports = System.IO.Ports;
 
-namespace ServoPIDControl
+namespace ServoPIDControl.Serial
 {
     /// <summary>
     /// Minimal 'interfacification' of <see cref="Ports.SerialPort"/> to allow mocking

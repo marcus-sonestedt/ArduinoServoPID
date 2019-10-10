@@ -1,6 +1,6 @@
 ﻿using System.IO.Ports;
 
-namespace ServoPIDControl
+namespace ServoPIDControl.Serial
 {
     /// <summary>
     /// Implements <see cref="ISerialPort"/> using <see cref="System.IO.Ports.SerialPort"/>

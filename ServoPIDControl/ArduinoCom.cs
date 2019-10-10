@@ -10,6 +10,7 @@ using NLog;
 using ServoPIDControl.Model;
 using ServoPIDControl.Serial;
 using static ServoPIDControl.Command;
+using SerialPort = ServoPIDControl.Serial.SerialPort;
 
 namespace ServoPIDControl
 {
@@ -418,10 +419,14 @@ namespace ServoPIDControl
 
                     Model.Connected = true;
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
+                    Log.Warn(e, $"Failed to open port: {e.Message}");
+
                     _port?.Dispose();
                     _port = null;
+
+                    Model.Connected = false;
                     //throw;
                 }
             }

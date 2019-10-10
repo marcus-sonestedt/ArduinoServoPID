@@ -10,11 +10,12 @@
 // add headers that you want to pre-compile here
 #include "framework.h"
 
+#include <array>
 #include <vector>
 #include <string>
 #include <sstream>
-#include <array>
 #include <fstream>
+#include <mutex>
 
 #ifdef ARDUINOMOCK_EXPORTS
 #define MOCK_API __declspec(dllexport)

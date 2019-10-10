@@ -4,7 +4,7 @@ using System.Reflection;
 using System.Text;
 using NLog;
 
-namespace ServoPIDControl
+namespace ServoPIDControl.Serial
 {
     public class MockSerialPort : ISerialPort
     {
