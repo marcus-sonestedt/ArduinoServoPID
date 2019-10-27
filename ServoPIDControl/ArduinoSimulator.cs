@@ -2,6 +2,7 @@
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Windows.Threading;
 using NLog;
 using ServoPIDControl.Serial;
 using static System.Runtime.InteropServices.CallingConvention;
@@ -12,9 +13,8 @@ namespace ServoPIDControl
     {
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
         
-        private readonly TimerCallback _loopCallback = _ => _Loop();
+        private readonly DispatcherTimer _loopTimer;
 
-        private Timer _loopTimer;
         private ushort[] _on;
         private ushort[] _off;
         private byte[] _eeprom;
@@ -23,13 +23,15 @@ namespace ServoPIDControl
 
         public ArduinoSimulator()
         {
+            _loopTimer = _loopTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(10),
+                IsEnabled = false,
+            };
+            _loopTimer.Tick += (s,a) => _Loop();
             Serial.PropertyChanged += SerialOnPropertyChanged;
-
-            (_on, _off) = ReadPwm();
-            _eeprom = ReadEeprom();
-
+            UpdateState();
             Log.Info($"{_on.Length} PWM Servos and {_eeprom.Length} bytes of EEPROM");
-
             _Setup();
         }
 
@@ -39,17 +41,22 @@ namespace ServoPIDControl
             {
                 case nameof(Serial.IsOpen) when Serial.IsOpen:
                     Log.Info("Starting loop timer");
-                    _loopTimer?.Dispose();
-                    _loopTimer = new Timer(_loopCallback, null, TimeSpan.Zero, TimeSpan.FromMilliseconds(10));
+                    _loopTimer.Stop();
                     break;
                 case nameof(Serial.IsOpen):
                     Log.Info("Stopping loop timer");
-                    _loopTimer?.Dispose();
-                    _loopTimer = null;
+                    _loopTimer.Start();
+                    break;
+                default:
                     break;
             }
         }
 
+        public void UpdateState()
+        {
+            (_on, _off) = ReadPwm();
+            _eeprom = ReadEeprom();
+        }
 
         private const string DllName = "ArduinoMock_Win32";
         private const CallingConvention CallingConvention = Cdecl;
@@ -100,8 +107,7 @@ namespace ServoPIDControl
             Serial?.Dispose();
             Serial = null;
 
-            _loopTimer?.Dispose();
-            _loopTimer = null;
+            _loopTimer.Stop();
         }
     }
 }

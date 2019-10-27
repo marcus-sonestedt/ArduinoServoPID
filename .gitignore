@@ -25,3 +25,5 @@ MigrationBackup/
 /TestServoPID/Win32/Debug
 /TestServoPID/x64/Debug
 Win32/
+*.user
+ServoPid/Debug/

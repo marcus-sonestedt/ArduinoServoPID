@@ -1,12 +1,11 @@
-﻿using System;
+﻿using NLog;
+using ServoPIDControl.Annotations;
+using System;
 using System.ComponentModel;
 using System.IO.Ports;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Windows;
-using NLog;
-using ServoPIDControl.Annotations;
 
 namespace ServoPIDControl.Serial
 {
@@ -21,10 +20,10 @@ namespace ServoPIDControl.Serial
 
         public ArduinoCppMockSerial()
         {
-            _serialCallback = () => 
-                Application.Current.Dispatcher.BeginInvoke(
-                new Action(() => DataReceived?.Invoke(this,
-                    MockSerialPort.SerialCharsReceivedEventArgs)));
+            _serialCallback = () =>
+            {
+                DataReceived?.Invoke(this, MockSerialPort.SerialCharsReceivedEventArgs);
+            };
         }
 
         public void Open()
