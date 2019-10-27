@@ -20,58 +20,62 @@
 
 // ReSharper disable CppMemberFunctionMayBeStatic
 
+#pragma warning(push)
+#pragma warning(disable: 4251) // std::vector needs to have DLL interface to be used by clients...
 
 class MOCK_API Adafruit_PWMServoDriver
 {
 public:
-    Adafruit_PWMServoDriver(uint8_t addr = 0x40, void* I2C = nullptr)
-        : _i2caddr(addr), _i2c(I2C)
-    {
-    }
+  explicit Adafruit_PWMServoDriver(uint8_t addr = 0x40, void* I2C = nullptr)
+    : _pwmOn(16), _pwmOff(16), _i2c(I2C), _i2caddr(addr)
+  {
+  }
 
-    ~Adafruit_PWMServoDriver() = default;
+  ~Adafruit_PWMServoDriver() = default;
 
-    void begin(uint8_t prescale = 0)
-    {
-    }
+  void begin(uint8_t prescale = 0)
+  {
+  }
 
-    void reset()
-    {
-    }
+  void reset()
+  {
+  }
 
-    void sleep()
-    {
-    }
+  void sleep()
+  {
+  }
 
-    void wakeup()
-    {
-    }
+  void wakeup()
+  {
+  }
 
-    void setExtClk(uint8_t prescale)
-    {
-    }
+  void setExtClk(uint8_t prescale)
+  {
+  }
 
-    void    setPWMFreq(float freq) { _freq = freq; }
-    void    setOutputMode(bool totempole) { _outputMode = totempole; }
-    uint8_t getPWM(uint8_t num) { return (_pwmOff[num] - _pwmOn[num]) / (4096 / 256); }
+  void    setPWMFreq(float freq) { _freq = freq; }
+  void    setOutputMode(bool totempole) { _outputMode = totempole; }
+  uint8_t getPWM(uint8_t num) { return (_pwmOff.at(num) - _pwmOn.at(num)) / (4096 / 256); }
 
-    void setPWM(uint8_t num, uint16_t on, uint16_t off)
-    {
-        _pwmOn[num] = on;
-        _pwmOff[num] = off;
-    }
+  void setPWM(uint8_t num, uint16_t on, uint16_t off)
+  {
+    _pwmOn.at(num) = on;
+    _pwmOff.at(num) = off;
+  }
 
-    void setPin(uint8_t num, uint16_t val, bool invert = false);
+  void setPin(uint8_t num, uint16_t val, bool invert = false);
 
 public:
-    std::array<uint16_t, 16> _pwmOn;
-    std::array<uint16_t, 16> _pwmOff;
-    float                    _freq = 60;
-    bool                     _outputMode = false;
+  std::vector<uint16_t> _pwmOn;
+  std::vector<uint16_t> _pwmOff;
+  float                 _freq = 60;
+  bool                  _outputMode = false;
 
 private:
-    void*   _i2c = nullptr;
-    uint8_t _i2caddr = 0x40;
+  void*   _i2c = nullptr;
+  uint8_t _i2caddr = 0x40;
 };
+
+#pragma warning(pop)
 
 // ReSharper restore CppMemberFunctionMayBeStatic

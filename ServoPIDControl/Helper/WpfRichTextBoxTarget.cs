@@ -77,9 +77,9 @@ namespace ServoPIDControl.Helper
 
         public WpfRichTextBoxTarget()
         {
-            this.WordColoringRules = new List<WpfRichTextBoxWordColoringRule>();
-            this.RowColoringRules = new List<WpfRichTextBoxRowColoringRule>();
-            this.ToolWindow = true;
+            WordColoringRules = new List<WpfRichTextBoxWordColoringRule>();
+            RowColoringRules = new List<WpfRichTextBoxRowColoringRule>();
+            ToolWindow = true;
         }
 
         private delegate void DelSendTheMessageToRichTextBox(string logMessage, WpfRichTextBoxRowColoringRule rule);
@@ -140,7 +140,7 @@ namespace ServoPIDControl.Helper
             if (openFormByName != null)
             {
                 TargetForm = openFormByName;
-                if (string.IsNullOrEmpty(this.ControlName))
+                if (string.IsNullOrEmpty(ControlName))
                 {
                    // throw new NLogConfigurationException("Rich text box control name must be specified for " + GetType().Name + ".");
 					Trace.WriteLine("Rich text box control name must be specified for " + GetType().Name + ".");
@@ -149,7 +149,7 @@ namespace ServoPIDControl.Helper
                 CreatedForm = false;
 				TargetRichTextBox = TargetForm.FindName(ControlName) as System.Windows.Controls.RichTextBox ;
 
-                if (this.TargetRichTextBox == null)
+                if (TargetRichTextBox == null)
                 {
                    // throw new NLogConfigurationException("Rich text box control '" + ControlName + "' cannot be found on form '" + FormName + "'.");
 					Trace.WriteLine("Rich text box control '" + ControlName + "' cannot be found on form '" + FormName + "'.");
@@ -244,8 +244,7 @@ namespace ServoPIDControl.Helper
 
 		private static Color GetColorFromString(string color, Brush defaultColor)
 		{
-			
-			if (color == "Empty")
+            if (color == "Empty")
 			{
 				color = "White";
 			}
@@ -258,8 +257,10 @@ namespace ServoPIDControl.Helper
         {
             System.Windows.Controls.RichTextBox rtbx = TargetRichTextBox;
 
-            var tr = new TextRange(rtbx.Document.ContentEnd, rtbx.Document.ContentEnd);
-            tr.Text = logMessage + "\n";
+            var tr = new TextRange(rtbx.Document.ContentEnd, rtbx.Document.ContentEnd)
+            {
+                Text = logMessage + "\n"
+            };
             tr.ApplyPropertyValue(TextElement.ForegroundProperty, 
                 new SolidColorBrush(GetColorFromString(rule.FontColor, (Brush)tr.GetPropertyValue(TextElement.ForegroundProperty)))
             );
@@ -269,19 +270,19 @@ namespace ServoPIDControl.Helper
             tr.ApplyPropertyValue(TextElement.FontStyleProperty, rule.Style);
             tr.ApplyPropertyValue(TextElement.FontWeightProperty, rule.Weight);
 
-            if (this.MaxLines > 0)
+            if (MaxLines > 0)
             {
-                this.lineCount++;
+                lineCount++;
 
-                if (this.lineCount > MaxLines)
+                if (lineCount > MaxLines)
                 {
                     var b = rtbx.Document.Blocks.FirstBlock;
                     rtbx.Document.Blocks.Remove(b);
-                    this.lineCount--;
+                    lineCount--;
                 }
             }
 
-            if (this.AutoScroll)
+            if (AutoScroll)
             {
                 rtbx.ScrollToEnd();
             }

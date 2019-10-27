@@ -17,6 +17,7 @@ namespace ServoPIDControl
 {
     public enum Command : byte
     {
+        // ReSharper disable once UnusedMember.Global
         NoOp,
         SetServoParamFloat,
         EnableRegulator,
@@ -32,6 +33,7 @@ namespace ServoPIDControl
 
     public enum ServoParam : byte
     {
+        // ReSharper disable once UnusedMember.Global
         None,
         P,
         I,
@@ -437,13 +439,16 @@ namespace ServoPIDControl
             //SendCommand(Command.EnableRegulator, (byte) (Model.Enabled ? 1 : 0));
         }
 
-        private ISerialPort CreateSimulatorPort()
+        private static ISerialPort CreateSimulatorPort()
         {
+#pragma warning disable IDE0067 // Dispose objects before losing scope
              var sim = new ArduinoSimulator();
+             sim.Serial.Disposed += (s, a) => sim.Dispose();
              return sim.Serial;
+#pragma warning restore IDE0067 // Dispose objects before losing scope
         }
 
-        private ISerialPort CreateMockPort()
+        private static ISerialPort CreateMockPort()
         {
             return new MockSerialPort();
         }

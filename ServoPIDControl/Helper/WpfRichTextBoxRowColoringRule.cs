@@ -90,7 +90,7 @@ namespace ServoPIDControl.Helper
 
         public bool CheckCondition(LogEventInfo logEvent)
         {
-            return true.Equals(this.Condition.Evaluate(logEvent));
+            return true.Equals(Condition.Evaluate(logEvent));
         }
     }
 }

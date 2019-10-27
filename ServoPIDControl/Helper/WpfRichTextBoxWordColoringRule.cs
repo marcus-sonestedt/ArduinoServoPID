@@ -47,26 +47,26 @@ namespace ServoPIDControl.Helper
 
         public WpfRichTextBoxWordColoringRule()
         {
-            this.FontColor = "Empty";
-            this.BackgroundColor = "Empty";
+            FontColor = "Empty";
+            BackgroundColor = "Empty";
         }
 
         public WpfRichTextBoxWordColoringRule(string text, string fontColor, string backgroundColor)
         {
-            this.Text = text;
-            this.FontColor = fontColor;
-            this.BackgroundColor = backgroundColor;
-            this.Style = FontStyles.Normal;
-            this.Weight = FontWeights.Normal;
+            Text = text;
+            FontColor = fontColor;
+            BackgroundColor = backgroundColor;
+            Style = FontStyles.Normal;
+            Weight = FontWeights.Normal;
         }
 
         public WpfRichTextBoxWordColoringRule(string text, string textColor, string backgroundColor, FontStyle fontStyle, FontWeight fontWeight)
         {
-            this.Text = text;
-            this.FontColor = textColor;
-            this.BackgroundColor = backgroundColor;
-            this.Style = fontStyle;
-            this.Weight = fontWeight;
+            Text = text;
+            FontColor = textColor;
+            BackgroundColor = backgroundColor;
+            Style = fontStyle;
+            Weight = fontWeight;
         }
 
         public string Regex { get; set; }
@@ -87,28 +87,28 @@ namespace ServoPIDControl.Helper
         {
             get
             {
-                if (this.compiledRegex == null)
+                if (compiledRegex == null)
                 {
-                    string regexpression = this.Regex;
-                    if (regexpression == null && this.Text != null)
+                    string regexpression = Regex;
+                    if (regexpression == null && Text != null)
                     {
-                        regexpression = System.Text.RegularExpressions.Regex.Escape(this.Text);
-                        if (this.WholeWords)
+                        regexpression = System.Text.RegularExpressions.Regex.Escape(Text);
+                        if (WholeWords)
                         {
                             regexpression = "\b" + regexpression + "\b";
                         }
                     }
 
                     RegexOptions regexOptions = RegexOptions.Compiled;
-                    if (this.IgnoreCase)
+                    if (IgnoreCase)
                     {
                         regexOptions |= RegexOptions.IgnoreCase;
                     }
 
-                    this.compiledRegex = new Regex(regexpression, regexOptions);
+                    compiledRegex = new Regex(regexpression, regexOptions);
                 }
 
-                return this.compiledRegex;
+                return compiledRegex;
             }
         }
 

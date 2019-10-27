@@ -16,8 +16,9 @@ namespace ServoPIDControl.Serial
         private readonly Action _serialCallback;
         private bool _isOpen;
         private bool _callBackTriggered;
+        private bool _disposed;
 
-        public void Dispose() => Close();
+        public event EventHandler Disposed;
 
         public ArduinoCppMockSerial()
         {
@@ -25,6 +26,16 @@ namespace ServoPIDControl.Serial
             {
                 _callBackTriggered = true;
             };
+        }
+
+        public void Dispose()
+        {
+            if (_disposed)
+                return;
+
+            _disposed = true;
+            Close();
+            Disposed?.Invoke(this, EventArgs.Empty);
         }
 
         public void Open()

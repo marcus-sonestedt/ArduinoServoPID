@@ -38,14 +38,14 @@ namespace ServoPIDControl
             Serial.PropertyChanged += SerialOnPropertyChanged;
             UpdateState();
             Log.Info($"{_on.Length} PWM Servos and {_eeprom.Length} bytes of EEPROM");
-            _Setup();
+            Arduino_Setup();
         }
 
         private void LoopTimerOnTick(object sender, EventArgs eventArgs)
         {
             _arduinoTime += (uint) _loopTimer.Interval.TotalMilliseconds * 1000;
             SetMicros(_arduinoTime);
-            _Loop();
+            Arduino_Loop();
             Serial.SendReceivedEvents();
         }
 
@@ -76,10 +76,10 @@ namespace ServoPIDControl
         private const CallingConvention CallingConvention = Cdecl;
 
         [DllImport(DllName, EntryPoint = "Arduino_Setup", CallingConvention = CallingConvention)]
-        public static extern void _Setup();
+        public static extern void Arduino_Setup();
 
         [DllImport(DllName, EntryPoint = "Arduino_Loop", CallingConvention = CallingConvention)]
-        private static extern void _Loop();
+        private static extern void Arduino_Loop();
 
         [DllImport(DllName, EntryPoint = "Set_Micros", CallingConvention = CallingConvention)]
         private static extern void SetMicros(uint micros);
@@ -91,12 +91,12 @@ namespace ServoPIDControl
         {
             var size = EepromSize();
             var data = new byte[size];
-            _ReadEeprom(data, size);
+            Read_Eeprom(data, size);
             return data;
         }
 
         [DllImport(DllName, EntryPoint = "EEPROM_Read", CallingConvention = CallingConvention)]
-        private static extern void _ReadEeprom(
+        private static extern void Read_Eeprom(
             [MarshalAs(UnmanagedType.LPArray)] byte[] data,
             int len
         );
@@ -110,12 +110,12 @@ namespace ServoPIDControl
             var nServos = PwmNumServos();
             var on = new ushort[nServos];
             var off = new ushort[nServos];
-            _PWMRead(on, off);
+            PWM_Read(on, off);
             return (on, off);
         }
 
         [DllImport(DllName, EntryPoint = "PWM_Read", CallingConvention = CallingConvention)]
-        private static extern void _PWMRead(
+        private static extern void PWM_Read(
             [MarshalAs(UnmanagedType.LPArray)] ushort[] on,
             [MarshalAs(UnmanagedType.LPArray)] ushort[] off
         );
