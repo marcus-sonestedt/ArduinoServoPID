@@ -29,6 +29,11 @@ MOCK_API void __cdecl Arduino_Loop()
   ArduinoLoop();
 }
 
+MOCK_API void __cdecl Set_Micros(uint32_t micros)
+{
+  setMockMicros(micros);
+}
+
 MOCK_API void __cdecl Serial_Write(const char* str, int strLen)
 {
   const unique_recursive_lock lock(gMutex);
@@ -40,10 +45,7 @@ MOCK_API void __cdecl Serial_Read(char* buf, int32_t bufLen, int32_t* available)
 {
   const unique_recursive_lock lock(gMutex);
 
-  string str;
-  str.reserve(bufLen);
-
-  Serial.readMock(str);
+  const auto str = Serial.readMock();
 
   *available = str.length();
   str.copy(buf, bufLen);

@@ -15,6 +15,7 @@ namespace ServoPIDControl.Serial
 
         private readonly Action _serialCallback;
         private bool _isOpen;
+        private bool _callBackTriggered;
 
         public void Dispose() => Close();
 
@@ -22,7 +23,7 @@ namespace ServoPIDControl.Serial
         {
             _serialCallback = () =>
             {
-                DataReceived?.Invoke(this, MockSerialPort.SerialCharsReceivedEventArgs);
+                _callBackTriggered = true;
             };
         }
 
@@ -55,6 +56,13 @@ namespace ServoPIDControl.Serial
             }
         }
 
+        public void SendReceivedEvents()
+        {
+            if (_callBackTriggered)
+                DataReceived?.Invoke(this, MockSerialPort.SerialCharsReceivedEventArgs);
+            _callBackTriggered = false;
+        }
+
         public string ReadExisting()
         {
             var sb = new StringBuilder(1024);
@@ -73,7 +81,7 @@ namespace ServoPIDControl.Serial
 
         public void WriteLine(string s)
         {
-            var bytes = Encoding.ASCII.GetBytes(s + "\n");
+            var bytes = Encoding.ASCII.GetBytes($"{s}\n");
             Write(bytes, bytes.Length);
         }
 

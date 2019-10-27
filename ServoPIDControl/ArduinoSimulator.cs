@@ -1,10 +1,10 @@
-﻿using System;
+﻿using NLog;
+using ServoPIDControl.Serial;
+using System;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
-using System.Threading;
+using System.Windows;
 using System.Windows.Threading;
-using NLog;
-using ServoPIDControl.Serial;
 using static System.Runtime.InteropServices.CallingConvention;
 
 namespace ServoPIDControl
@@ -12,27 +12,41 @@ namespace ServoPIDControl
     public class ArduinoSimulator : IDisposable
     {
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-        
+
         private readonly DispatcherTimer _loopTimer;
 
         private ushort[] _on;
         private ushort[] _off;
         private byte[] _eeprom;
+        private uint _arduinoTime;
 
         public ArduinoCppMockSerial Serial { get; private set; } = new ArduinoCppMockSerial();
 
         public ArduinoSimulator()
         {
-            _loopTimer = _loopTimer = new DispatcherTimer
+            _loopTimer = _loopTimer = new DispatcherTimer(
+                DispatcherPriority.Normal,
+                Application.Current.Dispatcher ?? Dispatcher.CurrentDispatcher
+            )
             {
                 Interval = TimeSpan.FromMilliseconds(10),
                 IsEnabled = false,
             };
-            _loopTimer.Tick += (s,a) => _Loop();
+
+            _loopTimer.Tick += LoopTimerOnTick;
+
             Serial.PropertyChanged += SerialOnPropertyChanged;
             UpdateState();
             Log.Info($"{_on.Length} PWM Servos and {_eeprom.Length} bytes of EEPROM");
             _Setup();
+        }
+
+        private void LoopTimerOnTick(object sender, EventArgs eventArgs)
+        {
+            _arduinoTime += (uint) _loopTimer.Interval.TotalMilliseconds * 1000;
+            SetMicros(_arduinoTime);
+            _Loop();
+            Serial.SendReceivedEvents();
         }
 
         private void SerialOnPropertyChanged(object sender, PropertyChangedEventArgs e)
@@ -41,11 +55,11 @@ namespace ServoPIDControl
             {
                 case nameof(Serial.IsOpen) when Serial.IsOpen:
                     Log.Info("Starting loop timer");
-                    _loopTimer.Stop();
+                    _loopTimer.Start();
                     break;
                 case nameof(Serial.IsOpen):
                     Log.Info("Stopping loop timer");
-                    _loopTimer.Start();
+                    _loopTimer.Stop();
                     break;
                 default:
                     break;
@@ -61,13 +75,16 @@ namespace ServoPIDControl
         private const string DllName = "ArduinoMock_Win32";
         private const CallingConvention CallingConvention = Cdecl;
 
-        [DllImport(DllName, EntryPoint = "Arduino_Setup",CallingConvention = CallingConvention)]
+        [DllImport(DllName, EntryPoint = "Arduino_Setup", CallingConvention = CallingConvention)]
         public static extern void _Setup();
 
-        [DllImport(DllName, EntryPoint = "Arduino_Loop",CallingConvention = CallingConvention)]
+        [DllImport(DllName, EntryPoint = "Arduino_Loop", CallingConvention = CallingConvention)]
         private static extern void _Loop();
 
-        [DllImport(DllName, EntryPoint = "EEPROM_Size",CallingConvention = CallingConvention)]
+        [DllImport(DllName, EntryPoint = "Set_Micros", CallingConvention = CallingConvention)]
+        private static extern void SetMicros(uint micros);
+
+        [DllImport(DllName, EntryPoint = "EEPROM_Size", CallingConvention = CallingConvention)]
         public static extern int EepromSize();
 
         public static byte[] ReadEeprom()
@@ -78,10 +95,9 @@ namespace ServoPIDControl
             return data;
         }
 
-        [DllImport(DllName, EntryPoint = "EEPROM_Read",CallingConvention = CallingConvention)]
+        [DllImport(DllName, EntryPoint = "EEPROM_Read", CallingConvention = CallingConvention)]
         private static extern void _ReadEeprom(
-            [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.ByValArray)]
-            byte[] data,
+            [MarshalAs(UnmanagedType.LPArray)] byte[] data,
             int len
         );
 
@@ -99,7 +115,10 @@ namespace ServoPIDControl
         }
 
         [DllImport(DllName, EntryPoint = "PWM_Read", CallingConvention = CallingConvention)]
-        private static extern void _PWMRead(ushort[] on, ushort[] off);
+        private static extern void _PWMRead(
+            [MarshalAs(UnmanagedType.LPArray)] ushort[] on,
+            [MarshalAs(UnmanagedType.LPArray)] ushort[] off
+        );
 
         public void Dispose()
         {

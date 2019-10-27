@@ -14,14 +14,25 @@ MOCK_API extern unsigned long    gMicros;
 MOCK_API extern std::vector<int> gAnalogPins;
 }
 
-inline unsigned long micros() { return mock::gMicros; }
-inline void          setMockMicros(const unsigned long value) { mock::gMicros = value; }
+inline unsigned long micros()
+{
+  return mock::gMicros;
+}
+
+inline void setMockMicros(const unsigned long value)
+{
+  mock::gMicros = value;
+}
 
 inline void delay(int ms)
 {
+  std::this_thread::sleep_for(std::chrono::milliseconds(10));
 };
 
-inline int analogRead(const int pin) { return mock::gAnalogPins.at(pin); }
+inline int analogRead(const int pin)
+{
+  return mock::gAnalogPins.at(pin);
+}
 
 inline void setMockAnalogRead(const int pin, const int value)
 {
@@ -76,41 +87,59 @@ public:
   {
   }
 
-  int available() const { return _dataToArduino.str().size(); }
-
-  char read()
+  int available() const
   {
-    if (_dataToArduino.str().empty())
+    return int(_dataToArduino.size());
+  }
+
+  unsigned char read()
+  {
+    if (_dataToArduino.empty())
       return 0;
 
-    char value;
-    _dataToArduino >> value;
+    const auto value = _dataToArduino.front();
+    _dataToArduino.pop();
     return value;
   }
 
   void setMockData(const std::string& str)
   {
-    _dataToArduino.clear();
-    _dataToArduino << str;
+    while (!_dataToArduino.empty())
+      _dataToArduino.pop();
+
+    for (const auto c : str)
+      _dataToArduino.push(c);
   }
 
   void setMockData(const std::vector<char>& data)
   {
-    setMockData(std::string(&data.front(), data.size()));
+    while (!_dataToArduino.empty())
+      _dataToArduino.pop();
+
+    for (const auto c : data)
+      _dataToArduino.push(c);
   }
 
   template <typename T>
   void println(T value, int format = 3)
   {
-    _dataFromArduino << value;
+    print(value, format, false);
+    _dataFromArduino.push('\n');
     notify();
   }
 
   template <typename T>
-  void print(T value, int format = 3)
+  void print(T value, int format = 3, bool callNotify = true)
   {
-    _dataFromArduino << value;
-    notify();
+    std::stringstream ss;
+    ss.precision(format);
+    ss << value;
+
+    for (const auto c : ss.str())
+      _dataFromArduino.push(c);
+
+    if (callNotify)
+      notify();
   }
 
   void flush()
@@ -119,30 +148,53 @@ public:
 
   void resetMock()
   {
-    _dataToArduino.clear();
-    _dataFromArduino.clear();
-    _dataFromArduino.str({});
+    while (!_dataToArduino.empty())
+      _dataToArduino.pop();
+
+    while (!_dataFromArduino.empty())
+      _dataFromArduino.pop();
   }
 
-  void setCallback(void (*callback)()) { _callback = callback; }
+  void setCallback(void (*callback)())
+  {
+    _callback = callback;
+  }
 
   template <class T>
   void writeMock(const T& value)
   {
-    _dataToArduino << value;
+    std::stringstream ss;
+    ss << value;
+
+    for (auto c : ss.str())
+      _dataToArduino.push(c);
   }
 
-  template <class T>
-  void readMock(T& value)
+  std::string readMock()
   {
-    _dataFromArduino >> value;
+    std::string str;
+    while (!_dataFromArduino.empty())
+    {
+      const auto value = _dataFromArduino.front();
+      _dataFromArduino.pop();
+      str.push_back(value);
+    }
+
+    return str;
   }
 
   std::string readMockLine()
   {
-    std::string resp;
-    std::getline(_dataFromArduino, resp);
-    return resp;
+    std::string str;
+    while (!_dataFromArduino.empty())
+    {
+      const auto value = _dataFromArduino.front();
+      _dataFromArduino.pop();
+      str.push_back(value);
+      if (value == '\n')
+        break;
+    }
+    return str;
   }
 
 private:
@@ -152,9 +204,9 @@ private:
       _callback();
   }
 
-  std::stringstream _dataToArduino;
-  std::stringstream _dataFromArduino;
-  void (*           _callback)() = nullptr;
+  std::queue<char> _dataToArduino;
+  std::queue<char> _dataFromArduino;
+  void (*          _callback)() = nullptr;
 };
 
 MOCK_API extern MockSerial Serial;

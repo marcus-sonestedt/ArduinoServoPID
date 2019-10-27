@@ -6,7 +6,7 @@
 namespace mock
 {
 unsigned long    gMicros = 0;
-std::vector<int> gAnalogPins(256, 0);
+std::vector<int> gAnalogPins(256);
 }
 
 MOCK_API MockSerial Serial;

@@ -16,6 +16,7 @@
 #include <sstream>
 #include <fstream>
 #include <mutex>
+#include <queue>
 
 #ifdef ARDUINOMOCK_EXPORTS
 #define MOCK_API __declspec(dllexport)

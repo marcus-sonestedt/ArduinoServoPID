@@ -9,6 +9,7 @@ using System.Windows.Threading;
 using NLog;
 using ServoPIDControl.Model;
 using ServoPIDControl.Serial;
+using static System.Globalization.CultureInfo;
 using static ServoPIDControl.Command;
 using SerialPort = ServoPIDControl.Serial.SerialPort;
 
@@ -119,9 +120,9 @@ namespace ServoPIDControl
                 var parts = line.Split(' ');
                 try
                 {
-                    Model.DeltaTime = float.Parse(parts[1]);
-                    Model.MinDt = float.Parse(parts[2]);
-                    Model.MaxDt = float.Parse(parts[3]);
+                    Model.DeltaTime = float.Parse(parts[1], InvariantCulture);
+                    Model.MinDt = float.Parse(parts[2], InvariantCulture);
+                    Model.MaxDt = float.Parse(parts[3], InvariantCulture);
                 }
                 catch (Exception e)
                 {
@@ -163,11 +164,11 @@ namespace ServoPIDControl
                 {
                     var servoId = int.Parse(parts[1]);
                     var servo = Model.Servos[servoId];
-                    servo.P = float.Parse(parts[2]);
-                    servo.I = float.Parse(parts[3]);
-                    servo.D = float.Parse(parts[4]);
-                    servo.DLambda = float.Parse(parts[5]);
-                    servo.SetPoint = float.Parse(parts[6]);
+                    servo.P = float.Parse(parts[2], InvariantCulture);
+                    servo.I = float.Parse(parts[3], InvariantCulture);
+                    servo.D = float.Parse(parts[4], InvariantCulture);
+                    servo.DLambda = float.Parse(parts[5], InvariantCulture);
+                    servo.SetPoint = float.Parse(parts[6], InvariantCulture);
 
                     if (servoId == Model.Servos.Count - 1)
                         SendCommand(GetServoData, 0x80);
@@ -187,10 +188,10 @@ namespace ServoPIDControl
                 {
                     var servoId = int.Parse(parts[1]);
                     var servo = Model.Servos[servoId];
-                    servo.Input = float.Parse(parts[2]);
-                    servo.Output = float.Parse(parts[3]);
-                    servo.Integrator = float.Parse(parts[4]);
-                    servo.DFiltered = float.Parse(parts[5]);
+                    servo.Input = float.Parse(parts[2], InvariantCulture);
+                    servo.Output = float.Parse(parts[3], InvariantCulture);
+                    servo.Integrator = float.Parse(parts[4], InvariantCulture);
+                    servo.DFiltered = float.Parse(parts[5], InvariantCulture);
 
                     servo.RecordTimePoint();
                 }
@@ -210,10 +211,10 @@ namespace ServoPIDControl
                     var d = Model.GlobalVarDict;
                     d[GlobalVar.NumServos].Value = int.Parse(parts[1]);
                     d[GlobalVar.PidEnabled].Value = int.Parse(parts[2]);
-                    d[GlobalVar.PidMaxIntegratorStore].Value = float.Parse(parts[3]);
-                    d[GlobalVar.AnalogInputRange].Value = float.Parse(parts[4]);
-                    d[GlobalVar.ServoMinAngle].Value = float.Parse(parts[5]);
-                    d[GlobalVar.ServoMaxAngle].Value = float.Parse(parts[6]);
+                    d[GlobalVar.PidMaxIntegratorStore].Value = float.Parse(parts[3], InvariantCulture);
+                    d[GlobalVar.AnalogInputRange].Value = float.Parse(parts[4], InvariantCulture);
+                    d[GlobalVar.ServoMinAngle].Value = float.Parse(parts[5], InvariantCulture);
+                    d[GlobalVar.ServoMaxAngle].Value = float.Parse(parts[6], InvariantCulture);
                 }
                 catch (Exception e)
                 {
@@ -366,7 +367,6 @@ namespace ServoPIDControl
                     .Concat(BitConverter.GetBytes(value))
                     .ToArray());
         }
-
 
         private void ConnectPort()
         {
