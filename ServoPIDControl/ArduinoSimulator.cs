@@ -15,11 +15,22 @@ namespace ServoPIDControl
     {
         internal class PhysicalModel
         {
+            public double DamperConstant { get; set; } = 0.5;
+            public double Mass { get; set; } = 1;
+            public double SpringConstant { get; set; } = 10;
             public double Position { get; private set; }
             public double Velocity { get; private set; }
 
-            public void Update(double acceleration, double dt)
+            public void Update(double signal, double dt)
             {
+                // signal is 0..1 - modeled as attachment point of spring
+
+                var attachPosition = signal * 10 - 5;
+                var force = (attachPosition - Position) * SpringConstant;
+                force += Velocity * -DamperConstant;
+
+                var acceleration = force / Mass;
+
                 Velocity += acceleration * dt;
                 Position += Velocity * dt;
 
@@ -80,19 +91,19 @@ namespace ServoPIDControl
             for (var i = 0; i < _on.Length; ++i)
             {
                 // generate 0..1 signal
-                var value = (Math.Pow(Math.Sin(3 * _arduinoTime * 1e-6), (i * 2 + 1)) + 1) * 0.5;
+                var signal = (Math.Pow(Math.Sin(3 * _arduinoTime * 1e-6), (i * 2 + 1)) + 1) * 0.5;
 
                 var physModel = _physModels[i];
-                physModel.Update(value, dt);
-                value = physModel.Position + 90;
+                physModel.Update(signal, dt);
+                var value = physModel.Position + 90;
 
                 // vary between 80 and 100 on 320 deg scale
                 value *= 1 / 320.0;
 
                 // analog inputs are 10-bit integers
-                value *= 1023;
+                value  *= 1023;
 
-                SetAnalogInput((byte) i, (ushort) value);
+                SetAnalogInput((byte) i, (ushort)value);
             }
         }
 

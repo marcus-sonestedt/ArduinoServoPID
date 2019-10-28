@@ -374,7 +374,9 @@ namespace ServoPIDControl
                 if (_port == null || !_port.IsOpen)
                     return;
 
-                Log.Debug($"Sending {cmdData.Length}: {BitConverter.ToString(cmdData)}");
+                if (cmd != GetServoData)
+                    Log.Debug($"Sending {cmdData.Length}: {BitConverter.ToString(cmdData)}");
+
                 _port.Write(cmdData, 0, cmdData.Length);
             }
         }
