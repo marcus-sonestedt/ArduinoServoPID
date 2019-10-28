@@ -1,7 +1,9 @@
 ﻿using NLog;
 using ServoPIDControl.Serial;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Threading;
@@ -11,6 +13,23 @@ namespace ServoPIDControl
 {
     public class ArduinoSimulator : IDisposable
     {
+        internal class PhysicalModel
+        {
+            public double Position { get; private set; }
+            public double Velocity { get; private set; }
+
+            public void Update(double acceleration, double dt)
+            {
+                Velocity += acceleration * dt;
+                Position += Velocity * dt;
+
+                Position =
+                    Position < -10 ? -10
+                    : Position > 10 ? 10
+                    : Position;
+            }
+        }
+
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
         private readonly DispatcherTimer _loopTimer;
@@ -19,6 +38,8 @@ namespace ServoPIDControl
         private ushort[] _off;
         private byte[] _eeprom;
         private uint _arduinoTime;
+
+        private readonly List<PhysicalModel> _physModels = new List<PhysicalModel>();
 
         public ArduinoCppMockSerial Serial { get; private set; } = new ArduinoCppMockSerial();
 
@@ -34,10 +55,11 @@ namespace ServoPIDControl
             };
 
             _loopTimer.Tick += LoopTimerOnTick;
-
             Serial.PropertyChanged += SerialOnPropertyChanged;
-            UpdateState();
-            Log.Info($"{_on.Length} PWM Servos and {_eeprom.Length} bytes of EEPROM");
+
+            ReadArduinoExternalState();
+            Log.Info($"{_on.Length} PWM Servo(s) and {_eeprom.Length} bytes of EEPROM");
+
             Arduino_Setup();
         }
 
@@ -47,6 +69,31 @@ namespace ServoPIDControl
             SetMicros(_arduinoTime);
             Arduino_Loop();
             Serial.SendReceivedEvents();
+            ReadArduinoExternalState();
+            SimulateInputs();
+        }
+
+        private void SimulateInputs()
+        {
+            var dt = _loopTimer.Interval.TotalSeconds;
+
+            for (var i = 0; i < _on.Length; ++i)
+            {
+                // generate 0..1 signal
+                var value = (Math.Pow(Math.Sin(3 * _arduinoTime * 1e-6), (i * 2 + 1)) + 1) * 0.5;
+
+                var physModel = _physModels[i];
+                physModel.Update(value, dt);
+                value = physModel.Position + 90;
+
+                // vary between 80 and 100 on 320 deg scale
+                value *= 1 / 320.0;
+
+                // analog inputs are 10-bit integers
+                value *= 1023;
+
+                SetAnalogInput((byte) i, (ushort) value);
+            }
         }
 
         private void SerialOnPropertyChanged(object sender, PropertyChangedEventArgs e)
@@ -66,10 +113,16 @@ namespace ServoPIDControl
             }
         }
 
-        public void UpdateState()
+        public void ReadArduinoExternalState()
         {
             (_on, _off) = ReadPwm();
             _eeprom = ReadEeprom();
+
+            if (_on.Length != _physModels.Count)
+            {
+                _physModels.Clear();
+                _physModels.AddRange(Enumerable.Repeat(new PhysicalModel(), _on.Length));
+            }
         }
 
         private const string DllName = "ArduinoMock_Win32";
@@ -119,6 +172,9 @@ namespace ServoPIDControl
             [MarshalAs(UnmanagedType.LPArray)] ushort[] on,
             [MarshalAs(UnmanagedType.LPArray)] ushort[] off
         );
+
+        [DllImport(DllName, EntryPoint = "AnalogInput_Set", CallingConvention = CallingConvention)]
+        private static extern void SetAnalogInput(byte pin, ushort value);
 
         public void Dispose()
         {

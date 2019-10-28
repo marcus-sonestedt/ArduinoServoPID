@@ -10,16 +10,16 @@ constexpr const char* F(const char* x) { return x; }
 
 namespace mock
 {
-MOCK_API extern unsigned long    gMicros;
-MOCK_API extern std::vector<int> gAnalogPins;
+MOCK_API extern uint32_t              gMicros;
+MOCK_API extern std::vector<uint16_t> gAnalogPins;
 }
 
-inline unsigned long micros()
+inline uint32_t micros()
 {
   return mock::gMicros;
 }
 
-inline void setMockMicros(const unsigned long value)
+inline void setMockMicros(const uint32_t value)
 {
   mock::gMicros = value;
 }
@@ -29,12 +29,12 @@ inline void delay(int ms)
   std::this_thread::sleep_for(std::chrono::milliseconds(10));
 };
 
-inline int analogRead(const int pin)
+inline uint16_t analogRead(const int pin)
 {
   return mock::gAnalogPins.at(pin);
 }
 
-inline void setMockAnalogRead(const int pin, const int value)
+inline void setMockAnalogRead(const int pin, const uint16_t value)
 {
   mock::gAnalogPins.at(pin) = value;
 }
@@ -231,7 +231,7 @@ class MockEEPROM
 public:
   MockEEPROM()
   {
-    _mem.fill(0);
+    _mem.fill(0xff);
   }
 
   uint8_t read(int addr) { return _mem[addr]; }

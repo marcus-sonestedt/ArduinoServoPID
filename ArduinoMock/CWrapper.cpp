@@ -89,4 +89,10 @@ MOCK_API void __cdecl PWM_Read(uint16_t* on, uint16_t* off)
   copy(pwm._pwmOff.begin(), pwm._pwmOff.end(), off);
 }
 
+MOCK_API void __cdecl AnalogInput_Set(uint8_t pin, uint16_t value)
+{
+  setMockAnalogRead(pin, value);
+}
+
+
 }
