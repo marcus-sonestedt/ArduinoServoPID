@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using ServoPIDControl.Annotations;
 
@@ -8,16 +9,18 @@ namespace ServoPIDControl.Model
     {
         private float _value;
 
-        public GlobalVarModel(GlobalVar var)
+        public GlobalVarModel(GlobalVar variable)
         {
-            Var = var;
+            Variable = variable;
         }
 
-        public GlobalVar Var { get; }
+        public GlobalVar Variable { get; }
 
         public float Value
         {
+            [DebuggerStepThrough]
             get => _value;
+            [DebuggerStepThrough]
             set
             {
                 if (value.Equals(_value)) return;
@@ -29,9 +32,13 @@ namespace ServoPIDControl.Model
         public event PropertyChangedEventHandler PropertyChanged;
 
         [NotifyPropertyChangedInvocator]
+        [DebuggerStepThrough]
         protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
+
+        [DebuggerStepThrough]
+        public override string ToString() => $"{Variable}: {Value}";
     }
 }

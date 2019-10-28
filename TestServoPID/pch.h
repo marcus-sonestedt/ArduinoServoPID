@@ -11,3 +11,5 @@
 #include <queue>
 
 #include "../ArduinoMock/pch.h"
+
+#define SERVOPID_TEST 1

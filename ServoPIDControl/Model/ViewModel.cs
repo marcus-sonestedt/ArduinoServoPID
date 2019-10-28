@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Windows.Threading;
 using NLog;
 using ServoPIDControl.Annotations;
+using static ServoPIDControl.GlobalVar;
 using Ports = System.IO.Ports;
 
 namespace ServoPIDControl.Model
@@ -34,11 +35,19 @@ namespace ServoPIDControl.Model
             for (var i = 0; i < 4; ++i)
                 Servos.Add(new ServoPidModel(i));
 
-            GlobalVarDict = GlobalVars.ToDictionary(gv => gv.Var, gv => gv);
+            GlobalVar = GlobalVars.ToDictionary(gv => gv.Variable, gv => gv);
 
             _timer = new DispatcherTimer {Interval = TimeSpan.FromSeconds(1), IsEnabled = true};
-            _timer.Tick += (s, a) => ComPorts = Ports.SerialPort.GetPortNames().Distinct()
-                .Append("Mock").Append("Simulator").ToArray();
+            _timer.Tick += UpdateComPorts;
+        }
+
+        private void UpdateComPorts(object s, EventArgs a)
+        {
+            ComPorts = Ports.SerialPort.GetPortNames()
+                .Distinct()
+                .Append("Mock")
+                .Append("Simulator")
+                .ToArray();
         }
 
         public string ConnectedPort
@@ -153,9 +162,12 @@ namespace ServoPIDControl.Model
         }
 
         public IReadOnlyList<GlobalVarModel> GlobalVars { get; } =
-            Enum.GetValues(typeof(GlobalVar)).Cast<GlobalVar>().Select(v => new GlobalVarModel(v)).ToList();
+            Enum.GetValues(typeof(GlobalVar))
+                .Cast<GlobalVar>()
+                .Select(v => new GlobalVarModel(v))
+                .ToList();
 
-        public IDictionary<GlobalVar, GlobalVarModel> GlobalVarDict { get; } 
+        public IDictionary<GlobalVar, GlobalVarModel> GlobalVar { get; } 
 
         [NotifyPropertyChangedInvocator]
         protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)

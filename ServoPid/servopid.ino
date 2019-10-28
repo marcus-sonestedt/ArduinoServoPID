@@ -15,6 +15,9 @@
 #include "../ArduinoMock/AdafruitPwmServoDriverMock.h"
 #endif
 
+#endif
+
+#ifdef SERVOPID_TEST
 namespace
 {
 #endif
@@ -308,7 +311,7 @@ void loop()
 
 enum class Command
 {
-  NoOp,
+  NoOp = 0,
   SetServoParamFloat,
   EnableRegulator,
   GetNumServos,
@@ -343,7 +346,7 @@ enum class GlobalVar
 };
 
 unsigned char serialBuf[128] = {0};
-unsigned int  serialLen = 0;
+size_t  serialLen = 0;
 
 void handleSerialCommand();
 bool loadEeprom();
@@ -352,7 +355,7 @@ void resetToDefaultValues();
 
 void mySerialEvent()
 {
-  while (Serial.available() > 0 && serialLen < sizeof serialBuf)
+  while (Serial.available() > 0 && serialLen < sizeof(serialBuf))
   {
     serialBuf[serialLen++] = Serial.read();
 
@@ -368,14 +371,14 @@ void mySerialEvent()
       continue;
     }
 
-    if (serialLen >= sizeof serialBuf)
+    if (serialLen >= sizeof(serialBuf))
     {
       Serial.print(F("ERR: Command buffer overflow\n"));
       serialLen = 0;
       continue;
     }
 
-    if (serialBuf[0] == char(serialLen))
+    if (int(serialBuf[0]) == serialLen)
     {
       handleSerialCommand();
       serialLen = 0;
@@ -491,10 +494,10 @@ void handleSerialCommand()
       switch (var)
       {
       case GlobalVar::NumServos:
-        if (int(value) > numServos)
+        if (int(value) > MAX_SERVOS)
         {
           Serial.print("ERR: Max supported num servos is: ");
-          Serial.println(sizeof(PidServos) / sizeof(*PidServos));
+          Serial.println(MAX_SERVOS);
           return;
         }
 
@@ -711,6 +714,6 @@ void saveEeprom()
   EEPROM.put(crcAddress, newCrc);
 }
 
-#ifndef ARDUINO
+#ifdef SERVOPID_TEST
 } // end anonymous namespace
 #endif

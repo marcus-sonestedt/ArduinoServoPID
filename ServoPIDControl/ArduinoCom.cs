@@ -11,6 +11,7 @@ using ServoPIDControl.Model;
 using ServoPIDControl.Serial;
 using static System.Globalization.CultureInfo;
 using static ServoPIDControl.Command;
+using static ServoPIDControl.GlobalVar;
 using SerialPort = ServoPIDControl.Serial.SerialPort;
 
 namespace ServoPIDControl
@@ -18,7 +19,7 @@ namespace ServoPIDControl
     public enum Command : byte
     {
         // ReSharper disable once UnusedMember.Global
-        NoOp,
+        NoOp = 0,
         SetServoParamFloat,
         EnableRegulator,
         GetNumServos,
@@ -67,6 +68,7 @@ namespace ServoPIDControl
         private readonly StringBuilder _readBuf = new StringBuilder();
         private readonly DispatcherTimer _timer = new DispatcherTimer {Interval = TimeSpan.FromMilliseconds(50)};
         private readonly object _portLock = new object();
+        private bool _updatingGlobalVarsFromArduino;
 
         public ArduinoCom()
         {
@@ -210,17 +212,21 @@ namespace ServoPIDControl
                 var parts = line.Split(' ');
                 try
                 {
-                    var d = Model.GlobalVarDict;
-                    d[GlobalVar.NumServos].Value = int.Parse(parts[1]);
-                    d[GlobalVar.PidEnabled].Value = int.Parse(parts[2]);
-                    d[GlobalVar.PidMaxIntegratorStore].Value = float.Parse(parts[3], InvariantCulture);
-                    d[GlobalVar.AnalogInputRange].Value = float.Parse(parts[4], InvariantCulture);
-                    d[GlobalVar.ServoMinAngle].Value = float.Parse(parts[5], InvariantCulture);
-                    d[GlobalVar.ServoMaxAngle].Value = float.Parse(parts[6], InvariantCulture);
+                    _updatingGlobalVarsFromArduino = true;
+                    Model.GlobalVar[NumServos].Value = int.Parse(parts[1]);
+                    Model.GlobalVar[PidEnabled].Value = int.Parse(parts[2]);
+                    Model.GlobalVar[PidMaxIntegratorStore].Value = float.Parse(parts[3], InvariantCulture);
+                    Model.GlobalVar[AnalogInputRange].Value = float.Parse(parts[4], InvariantCulture);
+                    Model.GlobalVar[ServoMinAngle].Value = float.Parse(parts[5], InvariantCulture);
+                    Model.GlobalVar[ServoMaxAngle].Value = float.Parse(parts[6], InvariantCulture);
                 }
                 catch (Exception e)
                 {
                     Log.Error($"Bad global variable data: {line} - {e.Message}");
+                }
+                finally
+                {
+                    _updatingGlobalVarsFromArduino = false;
                 }
 
                 return;
@@ -287,13 +293,22 @@ namespace ServoPIDControl
 
         private void GlobalVarOnPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            var gv = (GlobalVarModel) sender;
-            SendCommand(SetGlobalVar, new[] {(byte) gv.Var}.Concat(BitConverter.GetBytes(gv.Value)).ToArray());
+            if (_updatingGlobalVarsFromArduino)
+                return;
+
+            var globalVar = (GlobalVarModel) sender;
+
+            var data = new[] {(byte) globalVar.Variable}
+                .Concat(BitConverter.GetBytes(globalVar.Value))
+                .ToArray();
+
+            SendCommand(SetGlobalVar, data);
         }
 
         private void ServoOnPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             var servo = (ServoPidModel) sender;
+
             switch (e.PropertyName)
             {
                 case nameof(ServoPidModel.P):
@@ -316,6 +331,8 @@ namespace ServoPIDControl
                     break;
                 case nameof(ServoPidModel.InputBias):
                     SendServoParam(servo.Id, ServoParam.InputBias, servo.InputBias);
+                    break;
+                default:
                     break;
             }
         }
