@@ -20,6 +20,7 @@ packages
 Release 
 MigrationBackup/
 /ArduinoMock/Debug
+UpgradeLog.htm
 /ArduinoMock/Win32/Debug
 /ArduinoMock/x64/Debug
 /TestServoPID/Win32/Debug

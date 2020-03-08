@@ -2,10 +2,10 @@
 
 #ifdef ARDUINO
 #if USE_PCA9685 == 1
-     #include <Wire.h>
-     #include <Adafruit_PWMServoDriver.h>
+#include <Wire.h>
+#include <Adafruit_PWMServoDriver.h>
 #else
-     #include <Servo.h>
+#include <Servo.h>
 #endif
      #include <EEPROM.h> 
 #else
@@ -27,7 +27,7 @@ class PID
 {
 public:
   // adjust to control the amount of "energy" that the PID integrator can store
-  static uint16_t MaxIntegratorStore;
+    static const int MaxIntegratorStore = 5000;
 
   PID() = default;
 
@@ -50,7 +50,7 @@ public:
 
   float regulate(float currentValue, float requestedValue, float dt)
   {
-    const auto error = requestedValue - currentValue;
+    const auto error = currentValue - requestedValue;
     const auto errorDelta = (error - _prevError) / dt;
 
     _prevError = error;
@@ -90,8 +90,9 @@ public:
 
   float read() const
   {
-    const auto value = float(analogRead(_pin));
-    return (value * _scale + _bias) * float(Range);
+     const auto value = analogRead(_pin);
+     const auto angle = ((value * _scale) + _bias) * Range;
+     return angle;
   }
 
   float   _scale = 1;
@@ -135,8 +136,9 @@ public:
   void write(const float angle)
   {
     const auto cAngle = constrain(angle, float(MinAngle), float(MaxAngle));
-    const auto pwm = float(_pwmMin) + float(_pwmMax - _pwmMin) * cAngle / (float(MaxAngle) - float(MinAngle));
-    gPwmController.setPWM(_pin, 0, uint16_t(pwm));
+    const auto pwm = _pwmMin + (_pwmMax - _pwmMin) * ((cAngle - MinAngle) / (float(MaxAngle) - float(MinAngle)));
+    const auto cPwm = constrain(pwm, _pwmMin, _pwmMax);
+    gPwmController.setPWM(_pin, 0, uint16_t(cPwm));
   }
 
   uint8_t  _pin = 0;
@@ -247,8 +249,8 @@ const int crcAddress = EEPROM.length() - sizeof(unsigned long);
 void setup()
 {
 #if USE_PCA9685
-  Wire.begin();          // Wire must be started first
-  Wire.setClock(400000); // Supported baud rates are 100kHz, 400kHz, and 1000kHz
+    //Wire.begin();                       // Wire must be started first
+    //Wire.setClock(400000);              // Supported baud rates are 100kHz, 400kHz, and 1000kHz
 
   gPwmController.begin();
   gPwmController.setPWMFreq(200);
@@ -324,6 +326,7 @@ enum class Command
 
 enum class ServoParam
 {
+    None,
   P,
   I,
   D,
@@ -399,7 +402,7 @@ void handleSerialCommand()
         return;
       }
 
-      auto&      servoPid = PidServos[int(serialBuf[2])];
+      auto& servoPid = PidServos[int(serialBuf[2])];
       const auto value = *reinterpret_cast<float*>(serialBuf + 4);
       switch (ServoParam(serialBuf[3]))
       {
@@ -583,7 +586,6 @@ unsigned long calcEepromCrc(int start, int end)
   };
 
   unsigned long crc = ~0L;
-
   for (auto index = start; index < end; ++index)
   {
     crc = crc_table[(crc ^ EEPROM[index]) & 0x0f] ^ (crc >> 4);
