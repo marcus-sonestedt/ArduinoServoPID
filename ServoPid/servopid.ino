@@ -234,7 +234,7 @@ bool PidServo::enabled = true;
 ////////////////////////////////////////////////////////////////////
 
 constexpr int MAX_SERVOS = 8;
-int           numServos = 4;
+unsigned int  numServos = 4;
 PidServo      PidServos[MAX_SERVOS];
 
 float prevTime = 0;
@@ -242,12 +242,10 @@ float dt = 0;
 
 void initServosFromEeprom();
 
-int crcAddress = 0;
+const int crcAddress = EEPROM.length() - sizeof(unsigned long);
 
 void setup()
 {
-  crcAddress = int(EEPROM.length() - sizeof(unsigned long));
-
 #if USE_PCA9685
   Wire.begin();          // Wire must be started first
   Wire.setClock(400000); // Supported baud rates are 100kHz, 400kHz, and 1000kHz
@@ -443,7 +441,7 @@ void handleSerialCommand()
     break;
 
   case Command::GetServoParams:
-    for (auto i = 0; i < numServos; ++i) // NOLINT(modernize-loop-convert)
+    for (auto i = 0u; i < numServos; ++i) // NOLINT(modernize-loop-convert)
     {
       const auto& servo = PidServos[i];
 
@@ -464,7 +462,7 @@ void handleSerialCommand()
     break;
 
   case Command::GetServoData:
-    for (auto i = 0; i < numServos; ++i)
+    for (auto i = 0u; i < numServos; ++i)
     {
       // show only one servo if set
       if (serialBuf[2] != i && serialBuf[2] < numServos)
@@ -494,7 +492,7 @@ void handleSerialCommand()
       switch (var)
       {
       case GlobalVar::NumServos:
-        if (int(value) > MAX_SERVOS)
+        if (int(value) >= MAX_SERVOS)
         {
           Serial.print("ERR: Max supported num servos is: ");
           Serial.println(MAX_SERVOS);
@@ -502,7 +500,7 @@ void handleSerialCommand()
         }
 
         numServos = int(value);
-        for (auto i = 0; i < numServos; ++i)
+        for (auto i = 0u; i < numServos; ++i)
         {
           PidServos[i] = PidServo();
           PidServos[i].reset();
@@ -640,7 +638,7 @@ void resetToDefaultValues()
   PidServos[2].setPoint(90);
   PidServos[3].setPoint(90);
 
-  for (auto i = 0; i < numServos; ++i)
+  for (auto i = 0u; i < numServos; ++i)
     PidServos[i].reset();
 
   PidServo::enabled = false;
@@ -651,14 +649,14 @@ void resetToDefaultValues()
 }
 
 template <typename T>
-void eepromPutInc(int& addr, const T value)
+void eepromPutInc(unsigned int& addr, const T value)
 {
   EEPROM.put(addr, value);
   addr += sizeof(T);
 }
 
 template <typename T>
-void eepromGetInc(int& addr, T& value)
+void eepromGetInc(unsigned int& addr, T& value)
 {
   EEPROM.get(addr, value);
   addr += sizeof(T);
@@ -675,7 +673,7 @@ bool loadEeprom()
   if (computedCrc != storedCrc)
     return false;
 
-  auto addr = 0;
+  auto addr = 0u;
   eepromGetInc(addr, numServos);
   eepromGetInc(addr, PidServo::enabled);
   eepromGetInc(addr, PID::MaxIntegratorStore);
@@ -683,7 +681,7 @@ bool loadEeprom()
   eepromGetInc(addr, ServoBase::MinAngle);
   eepromGetInc(addr, ServoBase::MaxAngle);
 
-  for (auto i = 0; i < numServos; ++i)
+  for (auto i = 0u; i < numServos && (addr +sizeof(PidServo)) < EEPROM.length(); ++i)
   {
     eepromGetInc(addr, PidServos[i]);
     PidServos[i].reset();
@@ -694,7 +692,7 @@ bool loadEeprom()
 
 void saveEeprom()
 {
-  auto addr = 0;
+  auto addr = 0u;
   eepromPutInc(addr, numServos);
   eepromPutInc(addr, PidServo::enabled);
   eepromPutInc(addr, PID::MaxIntegratorStore);
@@ -702,7 +700,7 @@ void saveEeprom()
   eepromPutInc(addr, ServoBase::MinAngle);
   eepromPutInc(addr, ServoBase::MaxAngle);
 
-  for (auto i = 0; i < numServos; ++i)
+  for (auto i = 0u; i < numServos; ++i)
     eepromPutInc(addr, PidServos[i]);
 
   // clear remaining memory (write if not zero)

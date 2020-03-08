@@ -42,7 +42,9 @@ TEST(TestEEPROM, TestDefaultInit)
 
     EEPROM._mem.fill(0xFF);
     initServosFromEeprom(); // should init with default values
-    const std::vector<PidServo> currentServos(&PidServos[0], &PidServos[numServos]);
+
+    std::vector<PidServo> currentServos(numServos);
+    std::copy(std::begin(PidServos), std::begin(PidServos) + numServos, std::begin(currentServos));
 
     ASSERT_THAT(currentServos, testing::ElementsAreArray(defaultServos));
 }
@@ -60,14 +62,14 @@ TEST(TestEEPROM, TestLoadAfterSave)
     EEPROM._mem.fill(0xFF);
     initServosFromEeprom();
     saveEeprom(); // should be done by above
-    const std::vector<PidServo> defaultServos(&PidServos[0], &PidServos[numServos]);
+    const std::vector<PidServo> defaultServos(std::begin(PidServos), std::begin(PidServos) + numServos);
 
     // corrupt current data
     numServos = 42;
     std::fill(&PidServos[0], &PidServos[MAX_SERVOS], PidServo());
 
     loadEeprom();
-    const std::vector<PidServo> currentServos(&PidServos[0], &PidServos[numServos]);
-
+    const std::vector<PidServo> currentServos(std::begin(PidServos), std::begin(PidServos) + numServos);
+    
     ASSERT_THAT(currentServos, testing::ElementsAreArray(defaultServos));
 }

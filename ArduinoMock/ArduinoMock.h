@@ -186,14 +186,16 @@ public:
   std::string readMockLine()
   {
     std::string str;
+
     while (!_dataFromArduino.empty())
     {
       const auto value = _dataFromArduino.front();
       _dataFromArduino.pop();
-      str.push_back(value);
       if (value == '\n')
         break;
+      str.push_back(value);
     }
+
     return str;
   }
 
