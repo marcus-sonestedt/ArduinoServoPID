@@ -47,7 +47,7 @@ MOCK_API void __cdecl Serial_Read(char* buf, int32_t bufLen, int32_t* available)
 
   const auto str = Serial.readMock();
 
-  *available = str.length();
+  *available = static_cast<int32_t>(str.length());
   str.copy(buf, bufLen);
 }
 
@@ -77,7 +77,7 @@ MOCK_API int32_t __cdecl PWM_NumServos()
 {
   const unique_recursive_lock lock(gMutex);
 
-  return PwmController()._pwmOn.size();
+  return static_cast<int32_t>(PwmController()._pwmOn.size());
 }
 
 MOCK_API void __cdecl PWM_Read(uint16_t* on, uint16_t* off)

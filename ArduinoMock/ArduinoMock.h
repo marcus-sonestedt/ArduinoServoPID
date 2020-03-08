@@ -239,17 +239,24 @@ public:
   uint8_t read(int addr) { return _mem[addr]; }
 
   void write(int addr, uint8_t value) { _mem[addr] = value; }
-  void update(int addr, uint8_t value) { write(addr, value); }
+
+  void update(int addr, uint8_t value) { if (read(addr) != value) write(addr, value); }
 
   template <typename T>
-  void put(int addr, T value) { reinterpret_cast<T&>(_mem[addr]) = value; }
+  void put(int addr, const T value)
+  {
+    memcpy(_mem.data() + addr, &value, sizeof(T));
+  }
 
   template <typename T>
-  void get(int addr, T& value) { value = reinterpret_cast<const T&>(_mem[addr]); }
+  void get(int addr, T& value)
+  {
+    memcpy(&value, _mem.data() + addr, sizeof(T));
+  }
 
   uint8_t& operator[](int addr) { return _mem[addr]; }
 
-  constexpr unsigned int length() const { return _mem.size(); }
+  constexpr unsigned int length() const { return static_cast<unsigned int>(_mem.size()); }
 
   std::array<uint8_t, 4096> _mem{};
 };

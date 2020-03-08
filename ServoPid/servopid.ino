@@ -595,11 +595,11 @@ unsigned long calcEepromCrc(int start, int end)
 
 void initServosFromEeprom()
 {
-  if (loadEeprom())
-    return;
+  //if (loadEeprom())
+  //  return;
 
   resetToDefaultValues();
-  saveEeprom();
+  //saveEeprom();
 }
 
 void resetToDefaultValues()
