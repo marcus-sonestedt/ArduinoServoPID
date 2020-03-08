@@ -136,7 +136,8 @@ namespace ServoPIDControl
             }
         }
 
-        private const string DllName = "ArduinoMock_Win32";
+
+        private const string DllName = "ArduinoMock";
         private const CallingConvention CallingConvention = Cdecl;
 
         [DllImport(DllName, EntryPoint = "Arduino_Setup", CallingConvention = CallingConvention)]
