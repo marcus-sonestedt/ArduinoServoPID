@@ -26,7 +26,7 @@ inline void setMockMicros(const uint32_t value)
 
 inline void delay(int ms)
 {
-  std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  std::this_thread::sleep_for(std::chrono::milliseconds(ms));
 };
 
 inline uint16_t analogRead(const int pin)

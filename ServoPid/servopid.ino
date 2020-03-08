@@ -210,10 +210,10 @@ public:
 
   void reset()
   {
-    _servo.reset();
-    _pid.reset();
     _input = _analogPin.read();
     _output = _setPoint;
+    _servo.reset();
+    _pid.reset();
   }
 
 #if USE_PCA9685 == 1
@@ -681,7 +681,7 @@ bool loadEeprom()
   eepromGetInc(addr, ServoBase::MinAngle);
   eepromGetInc(addr, ServoBase::MaxAngle);
 
-  for (auto i = 0u; i < numServos && (addr +sizeof(PidServo)) < EEPROM.length(); ++i)
+  for (auto i = 0u; i < numServos; ++i)
   {
     eepromGetInc(addr, PidServos[i]);
     PidServos[i].reset();

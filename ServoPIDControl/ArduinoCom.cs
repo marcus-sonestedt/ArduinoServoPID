@@ -95,7 +95,7 @@ namespace ServoPIDControl
 
                 if (_readBuf.Length == 0)
                 {
-                    Log.Warn("Data received triggered but no data read?");
+                    Log.Trace("Data received triggered but no data read?");
                     return;
                 }
 
