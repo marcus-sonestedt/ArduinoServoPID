@@ -27,7 +27,7 @@ class PID
 {
 public:
   // adjust to control the amount of "energy" that the PID integrator can store
-    static const int MaxIntegratorStore = 5000;
+  static int MaxIntegratorStore;
 
   PID() = default;
 
@@ -71,7 +71,7 @@ public:
   float _prevError = 0;
 };
 
-uint16_t PID::MaxIntegratorStore = 50;
+int PID::MaxIntegratorStore = 5000;
 
 // Analog input, with min/max settings
 class AnalogPin
