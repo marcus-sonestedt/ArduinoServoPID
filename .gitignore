@@ -27,3 +27,6 @@ MigrationBackup/
 Win32/
 *.user
 ServoPid/Debug/
+Debug/
+ServoPIDControl/msbuild.log
+ServoPidControlSetup/msbuild.log
