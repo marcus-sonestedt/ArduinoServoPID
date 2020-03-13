@@ -50,10 +50,12 @@ TEST(TestPID, RegulateOffset)
 
 TEST(TestPID, RegulateMassSpringBounce)
 {
-    auto pid = PID(1.0f, 10.0f, 1.0f, 1.0f);
+    auto pid = PID(-2.0f, 2.0f, 0.0f, 0.5f);
 
-    const auto m = 1.0f;
-    const auto k = 20.0f;
+    PID::MaxIntegratorStore = 50;
+
+    const auto m = 2.0f;
+    const auto k = 5.0f;
     const auto dt = 0.05f;
 
     auto pos = 20.0f;
@@ -63,18 +65,20 @@ TEST(TestPID, RegulateMassSpringBounce)
     csv.open("pid_ms.csv", std::ios::out);
     ASSERT_TRUE(csv.is_open());
 
+    csv << "Requested" << ',' << "Output" << ',' << "Actual" << ',' << "Integral" << ',' << "DeltaF" << '\n';
+
     for (auto i = 0; i < 400; ++i)
     {
         const auto setPos = ((i / 100) % 3) * 10.0f;
-        const auto attachPos = constrain(pid.regulate(pos, setPos, 0.1f), -30, 30);
+        const auto attachPos = constrain(pid.regulate(pos, setPos,dt), -100, 100);
         
-        const auto force = (attachPos - pos) * k;
+        const auto force = (pos - attachPos) * -k;
         const auto acc = force / m;
         
         vel += acc * dt;
         pos += vel * dt;
 
-        csv << setPos << "," << attachPos << "," << pos << std::endl;
+        csv << setPos << "," << attachPos << ',' << pos << ',' << pid._integral << ',' << pid._deltaFiltered << std::endl;
     }
 
     ASSERT_NEAR(pos, 0, 1);

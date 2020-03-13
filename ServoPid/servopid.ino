@@ -50,14 +50,16 @@ public:
 
   float regulate(float currentValue, float requestedValue, float dt)
   {
-    const auto error = currentValue - requestedValue;
+    const auto error = requestedValue - currentValue;
     const auto errorDelta = (error - _prevError) / dt;
 
     _prevError = error;
     _deltaFiltered = (errorDelta * _dLambda) + (_deltaFiltered * (1.0f - _dLambda));
-    _integral = constrain(_integral + error * dt, float(-MaxIntegratorStore), float(MaxIntegratorStore));
-    // limit "energy" storage in integrator
+    _integral += error * dt;
 
+    // limit "energy" storage in integrator
+    _integral = constrain(_integral , -MaxIntegratorStore, MaxIntegratorStore);
+    
     return _pFactor * error + _iFactor * _integral + _dFactor * _deltaFiltered;
   }
 
@@ -258,16 +260,13 @@ void setup()
 
   initServosFromEeprom();
 
-  // start serials
+  // start serial port
   Serial.begin(115200);
-
-  // empty input buffer
   while (Serial.available())
     Serial.read();
 
-  delay(10);
-
   // initiate timer
+  delay(10);
   prevTime = 1e-6f * float(micros());
 }
 
@@ -597,11 +596,11 @@ unsigned long calcEepromCrc(int start, int end)
 
 void initServosFromEeprom()
 {
-  //if (loadEeprom())
-  //  return;
+  if (loadEeprom())
+    return;
 
   resetToDefaultValues();
-  //saveEeprom();
+  saveEeprom();
 }
 
 void resetToDefaultValues()
