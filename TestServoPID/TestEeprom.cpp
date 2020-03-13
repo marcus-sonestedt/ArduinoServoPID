@@ -15,7 +15,7 @@ namespace
             << "Servo pin: " << s._servo._pin << " pwm min: " << s._servo._pwmMin << " pwm max: " <<s._servo._pwmMax << std::endl
             << "Pot pin: " << s._analogPin._pin << " bias: " << s._analogPin._bias << " scale " << s._analogPin._scale << std::endl
             << "P: " << s._pid._pFactor << " I: " << s._pid._iFactor << " D: " << s._pid._dFactor << " DL: " << s._pid._dLambda  << std::endl
-            << "Integral: " << s._pid._integral << " PE: " << s._pid._prevError << " DF: " << s._pid._deltaFiltered << std::endl
+            << "Integral: " << s._pid._integral << " PV: " << s._pid._prevValue << " DF: " << s._pid._dValueFiltered << std::endl
             << "Input: " << s._input << " Output: " << s._output << std::endl;
     }
 }

@@ -38,29 +38,29 @@ public:
     _dFactor = d;
     _dLambda = dLambda;
 
-    reset();
+    reset(0.0f);
   }
 
-  void reset()
+  void reset(float currentValue)
   {
     _integral = 0.0f;
-    _prevError = 0.0f;
-    _deltaFiltered = 0.0f;
+    _prevValue = currentValue;
+    _dValueFiltered = 0.0f;
   }
 
   float regulate(float currentValue, float requestedValue, float dt)
   {
     const auto error = requestedValue - currentValue;
-    const auto errorDelta = (error - _prevError) / dt;
+    const auto dValue = (currentValue - _prevValue) / dt;
 
-    _prevError = error;
-    _deltaFiltered = (errorDelta * _dLambda) + (_deltaFiltered * (1.0f - _dLambda));
+    _prevValue = currentValue;
+    _dValueFiltered = (dValue * _dLambda) + (_dValueFiltered * (1.0f - _dLambda));
     _integral += error * dt;
 
     // limit "energy" storage in integrator
     _integral = constrain(_integral , -MaxIntegratorStore, MaxIntegratorStore);
     
-    return _pFactor * error + _iFactor * _integral + _dFactor * _deltaFiltered;
+    return _pFactor * error + _iFactor * _integral - _dFactor * _dValueFiltered;
   }
 
   float _pFactor = 0;
@@ -69,8 +69,8 @@ public:
   float _dLambda = 0;
 
   float _integral = 0;
-  float _deltaFiltered = 0;
-  float _prevError = 0;
+  float _dValueFiltered = 0;
+  float _prevValue = 0;
 };
 
 int PID::MaxIntegratorStore = 5000;
@@ -217,7 +217,7 @@ public:
     _input = _analogPin.read();
     _output = _setPoint;
     _servo.reset();
-    _pid.reset();
+    _pid.reset(_input);
   }
 
 #if USE_PCA9685 == 1
@@ -481,7 +481,7 @@ void handleSerialCommand()
       Serial.print(' ');
       Serial.print(servo._pid._integral);
       Serial.print(' ');
-      Serial.print(servo._pid._deltaFiltered);
+      Serial.print(servo._pid._dValueFiltered);
       Serial.print('\n');
     }
     break;
