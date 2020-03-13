@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\packages\vcpkg.C.users.marcu.source.repos.vcpkg.1.0.0\build\native\vcpkg.C.users.marcu.source.repos.vcpkg.props" Condition="Exists('..\packages\vcpkg.C.users.marcu.source.repos.vcpkg.1.0.0\build\native\vcpkg.C.users.marcu.source.repos.vcpkg.props')" />
+  <Import Project="..\packages\vcpkg.C.dev.vcpkg.1.0.0\build\native\vcpkg.C.dev.vcpkg.props" Condition="Exists('..\packages\vcpkg.C.dev.vcpkg.1.0.0\build\native\vcpkg.C.dev.vcpkg.props')" />
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -57,7 +57,7 @@
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
   <ImportGroup Label="Shared">
-    <Import Project="..\packages\vcpkg.C.users.marcu.source.repos.vcpkg.1.0.0\build\native\vcpkg.C.users.marcu.source.repos.vcpkg.targets" Condition="Exists('..\packages\vcpkg.C.users.marcu.source.repos.vcpkg.1.0.0\build\native\vcpkg.C.users.marcu.source.repos.vcpkg.targets')" />
+    <Import Project="..\packages\vcpkg.C.dev.vcpkg.1.0.0\build\native\vcpkg.C.dev.vcpkg.targets" Condition="Exists('..\packages\vcpkg.C.dev.vcpkg.1.0.0\build\native\vcpkg.C.dev.vcpkg.targets')" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -187,7 +187,7 @@
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('..\packages\vcpkg.C.users.marcu.source.repos.vcpkg.1.0.0\build\native\vcpkg.C.users.marcu.source.repos.vcpkg.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\vcpkg.C.users.marcu.source.repos.vcpkg.1.0.0\build\native\vcpkg.C.users.marcu.source.repos.vcpkg.props'))" />
-    <Error Condition="!Exists('..\packages\vcpkg.C.users.marcu.source.repos.vcpkg.1.0.0\build\native\vcpkg.C.users.marcu.source.repos.vcpkg.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\vcpkg.C.users.marcu.source.repos.vcpkg.1.0.0\build\native\vcpkg.C.users.marcu.source.repos.vcpkg.targets'))" />
+    <Error Condition="!Exists('..\packages\vcpkg.C.dev.vcpkg.1.0.0\build\native\vcpkg.C.dev.vcpkg.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\vcpkg.C.dev.vcpkg.1.0.0\build\native\vcpkg.C.dev.vcpkg.props'))" />
+    <Error Condition="!Exists('..\packages\vcpkg.C.dev.vcpkg.1.0.0\build\native\vcpkg.C.dev.vcpkg.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\vcpkg.C.dev.vcpkg.1.0.0\build\native\vcpkg.C.dev.vcpkg.targets'))" />
   </Target>
 </Project>
