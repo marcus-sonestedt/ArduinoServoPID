@@ -23,6 +23,17 @@ TEST(TestPID, NoStartFlutter)
   ASSERT_FLOAT_EQ(output, 0.0f);
 }
 
+TEST(TestPID, NoDeltaRelatedSpikeOnSetPosChange)
+{
+  auto       pid = PID(0.0f, 0.0f, 3.0f, 0.5f);
+  const auto input = 42.0f;
+  pid.reset(input);
+  const auto output1 = pid.regulate(input, input, 0.001f);
+  const auto output2 = pid.regulate(input, input*2, 0.001f);
+  ASSERT_NEAR(output1, output2, 1);
+}
+
+
 TEST(TestPID, RegulateScaled)
 {
   auto pid = PID(1.0f, 2.0f, 0.0f, 0.5f);
