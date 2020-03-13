@@ -84,9 +84,10 @@ TEST(TestPID, RegulateMassSpringBounce)
   csv.open("pid_ms.csv", std::ios::out);
   ASSERT_TRUE(csv.is_open());
 
-  csv << "Requested" << ',' << "Output" << ',' << "Actual" << ',' << "Integral" << ',' << "DeltaF" << '\n';
+  csv << "Requested" << ",\t" << "Output" << ",\t" << "Actual" << ",\t" << "Integral" << ",\t" << "DeltaF" << '\n';
   csv.precision(3);
-  csv << setPos << "," << '0' << ',' << pos << ',' << pid._integral << ',' << pid._dValueFiltered << std::endl;
+  csv.setf(csv.floatfield, csv.fixed);
+  csv << setPos << ",\t" << '0' << ",\t" << pos << ",\t" << pid._integral << ",\t" << pid._dValueFiltered << std::endl;
 
   for (auto i = 0; i < 300; ++i)
   {
@@ -100,7 +101,7 @@ TEST(TestPID, RegulateMassSpringBounce)
     //vel *= 0.95f; // damping
     pos += vel * dt;
 
-    csv << setPos << "," << attachPos << ',' << pos << ',' << pid._integral << ',' << pid._dValueFiltered << std::endl;
+    csv << setPos << ",\t" << attachPos << ",\t" << pos << ",\t" << pid._integral << ",\t" << pid._dValueFiltered << std::endl;
   }
 
   ASSERT_NEAR(pos, setPos, 1);
