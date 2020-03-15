@@ -346,7 +346,7 @@ enum class GlobalVar
 };
 
 unsigned char serialBuf[128] = {0};
-size_t  serialLen = 0;
+unsigned char serialLen = 0;
 
 void handleSerialCommand();
 bool loadEeprom();
@@ -378,7 +378,7 @@ void mySerialEvent()
       continue;
     }
 
-    if (int(serialBuf[0]) == serialLen)
+    if (serialBuf[0] == serialLen)
     {
       handleSerialCommand();
       serialLen = 0;
