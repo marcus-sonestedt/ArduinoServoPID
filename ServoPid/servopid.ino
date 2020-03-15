@@ -496,7 +496,7 @@ void handleSerialCommand()
       case GlobalVar::NumServos:
         if (int(value) >= MAX_SERVOS)
         {
-          Serial.print("ERR: Max supported num servos is: ");
+          Serial.print(F("ERR: Max supported num servos is: "));
           Serial.println(MAX_SERVOS);
           return;
         }
@@ -596,8 +596,10 @@ unsigned long calcEepromCrc(int start, int end)
 
 void initServosFromEeprom()
 {
-  if (loadEeprom())
+  if (loadEeprom()) {
+    Serial.println(F("LOG: Loaded PIDs from EEPROM"));
     return;
+  }
 
   resetToDefaultValues();
   saveEeprom();
@@ -605,6 +607,8 @@ void initServosFromEeprom()
 
 void resetToDefaultValues()
 {
+  Serial.println(F("LOG: Resetting PIDs to default values"));
+
   numServos = 4;
 
   const auto pK = 0.00f;
@@ -693,6 +697,8 @@ bool loadEeprom()
 
 void saveEeprom()
 {
+  Serial.println(F("LOG: Saving settings to EEPROM"));
+
   auto addr = 0u;
   eepromPutInc(addr, numServos);
   eepromPutInc(addr, PidServo::enabled);
@@ -711,6 +717,11 @@ void saveEeprom()
   // calc and store crc
   const auto newCrc = calcEepromCrc(0, crcAddress);
   EEPROM.put(crcAddress, newCrc);
+
+  Serial.print(F("LOG: Wrote "));
+  Serial.print(addr);
+  Serial.print(F(" bytes. CRC: "));
+  Serial.println(newCrc);
 }
 
 #ifdef SERVOPID_TEST

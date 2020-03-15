@@ -251,6 +251,12 @@ namespace ServoPIDControl
                 return;
             }
 
+            if (line.StartsWith("LOG: "))
+            {
+                Log.Info($"Received log message: '{line}'");
+                return;
+            }
+
             Log.Warn($"Unknown message: {line}");
         }
 
