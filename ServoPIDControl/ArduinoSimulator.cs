@@ -48,7 +48,7 @@ namespace ServoPIDControl
         private ushort[] _on;
         private ushort[] _off;
         private byte[] _eeprom;
-        private uint _arduinoTime;
+        private uint _arduinoTimeMicros;
 
         private readonly List<PhysicalModel> _physModels = new List<PhysicalModel>();
 
@@ -70,15 +70,15 @@ namespace ServoPIDControl
 
             ReadArduinoExternalState();
             Log.Info($"{_on.Length} PWM Servo(s) and {_eeprom.Length} bytes of EEPROM");
-
-            Arduino_Setup();
         }
 
         private void LoopTimerOnTick(object sender, EventArgs eventArgs)
         {
-            _arduinoTime += (uint) _loopTimer.Interval.TotalMilliseconds * 1000;
-            SetMicros(_arduinoTime);
+            _arduinoTimeMicros += (uint) _loopTimer.Interval.TotalMilliseconds * 1000;
+            SetMicros(_arduinoTimeMicros);
+
             Arduino_Loop();
+            
             Serial.SendReceivedEvents();
             ReadArduinoExternalState();
             SimulateInputs();
@@ -91,7 +91,7 @@ namespace ServoPIDControl
             for (var i = 0; i < _on.Length; ++i)
             {
                 // generate 0..1 signal
-                var signal = (Math.Pow(Math.Sin(3 * _arduinoTime * 1e-6), (i * 2 + 1)) + 1) * 0.5;
+                var signal = (Math.Pow(Math.Sin(3 * _arduinoTimeMicros * 1e-6), (i * 2 + 1)) + 1) * 0.5;
 
                 var physModel = _physModels[i];
                 physModel.Update(signal, dt);
@@ -112,7 +112,8 @@ namespace ServoPIDControl
             switch (e.PropertyName)
             {
                 case nameof(Serial.IsOpen) when Serial.IsOpen:
-                    Log.Info("Starting loop timer");
+                    Log.Info("Resetting arduino and starting loop timer");
+                    Arduino_Setup();
                     _loopTimer.Start();
                     break;
                 case nameof(Serial.IsOpen):

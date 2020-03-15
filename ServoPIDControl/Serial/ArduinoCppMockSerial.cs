@@ -33,6 +33,8 @@ namespace ServoPIDControl.Serial
             if (_disposed)
                 return;
 
+            Log.Info($"Disposing {nameof(ArduinoCppMockSerial)}");
+
             _disposed = true;
             Close();
             Disposed?.Invoke(this, EventArgs.Empty);

@@ -18,7 +18,7 @@ extern "C" {
 MOCK_API void __cdecl Arduino_Setup()
 {
   const unique_recursive_lock lock(gMutex);
-  ::OutputDebugStringA("Arduino setup");
+
   ArduinoSetup();
 }
 
