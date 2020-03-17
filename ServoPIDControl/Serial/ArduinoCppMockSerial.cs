@@ -100,10 +100,10 @@ namespace ServoPIDControl.Serial
 
         public void Write(byte[] data, int i, int len)
         {
-            // ugh
-            var str = Encoding.ASCII.GetString(data, i, len);
-            var bytes = Encoding.ASCII.GetBytes(str);
-            Write(bytes, bytes.Length);
+            if (i != 0) 
+                throw new NotImplementedException("Can only handle index = 0");
+
+            Write(data, len);
         }
 
         public event SerialDataReceivedEventHandler DataReceived;
@@ -112,10 +112,10 @@ namespace ServoPIDControl.Serial
         private const CallingConvention CallConvention = CallingConvention.Cdecl;
 
         [DllImport(DllName, CharSet = CharSet.Ansi, EntryPoint = "Serial_Write", CallingConvention = CallConvention)]
-        private static extern void Write(byte[] str, int strLen);
+        private static extern void Write(byte[] data, int dataLen);
 
         [DllImport(DllName, CharSet = CharSet.Ansi, EntryPoint = "Serial_Read", CallingConvention = CallConvention)]
-        private static extern void Read(byte[] buf, int bufLen, out int available);
+        private static extern void Read(byte[] data, int dataLen, out int available);
 
         [DllImport(DllName, EntryPoint = "Serial_SetCallback", CallingConvention = CallConvention)]
         private static extern void SetCallback(Action action);

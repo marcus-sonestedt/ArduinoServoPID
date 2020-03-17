@@ -34,11 +34,11 @@ MOCK_API void __cdecl Set_Micros(uint32_t micros)
   setMockMicros(micros);
 }
 
-MOCK_API void __cdecl Serial_Write(const char* str, int32_t strLen)
+MOCK_API void __cdecl Serial_Write(const unsigned char* str, int32_t strLen)
 {
   const unique_recursive_lock lock(gMutex);
 
-  Serial.writeMock(string(str, str + strLen));
+  Serial.writeMock(str, strLen);
 }
 
 MOCK_API void __cdecl Serial_Read(char* buf, int32_t bufLen, int32_t* available)

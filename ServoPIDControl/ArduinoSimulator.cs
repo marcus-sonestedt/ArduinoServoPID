@@ -101,7 +101,7 @@ namespace ServoPIDControl
                 value *= 1 / 320.0;
 
                 // analog inputs are 10-bit integers
-                value  *= 1023;
+                value *= 1023;
 
                 SetAnalogInput((byte) i, (ushort)value);
             }

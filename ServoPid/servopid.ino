@@ -58,8 +58,8 @@ public:
     _integral += error * dt;
 
     // limit "energy" storage in integrator
-    _integral = constrain(_integral , -MaxIntegratorStore, MaxIntegratorStore);
-    
+    _integral = constrain(_integral, -MaxIntegratorStore, MaxIntegratorStore);
+
     return _pFactor * error + _iFactor * _integral - _dFactor * _dValueFiltered;
   }
 
@@ -92,9 +92,9 @@ public:
 
   float read() const
   {
-     const auto value = analogRead(_pin);
-     const auto angle = ((value * _scale) + _bias) * Range;
-     return angle;
+    const auto value = analogRead(_pin);
+    const auto angle = ((value * _scale) + _bias) * Range;
+    return angle;
   }
 
   float   _scale = 1;
@@ -251,8 +251,8 @@ const int crcAddress = EEPROM.length() - sizeof(unsigned long);
 void setup()
 {
 #if USE_PCA9685
-    //Wire.begin();                       // Wire must be started first
-    //Wire.setClock(400000);              // Supported baud rates are 100kHz, 400kHz, and 1000kHz
+  //Wire.begin();                       // Wire must be started first
+  //Wire.setClock(400000);              // Supported baud rates are 100kHz, 400kHz, and 1000kHz
 
   gPwmController.begin();
   gPwmController.setPWMFreq(200);
@@ -308,7 +308,7 @@ void loop()
     mySerialEvent();
 }
 
-enum class Command
+enum class Command : uint8_t
 {
   NoOp = 0,
   SetServoParamFloat,
@@ -323,19 +323,19 @@ enum class Command
   ResetToDefault,
 };
 
-enum class ServoParam
+enum class ServoParam : uint8_t
 {
-    None,
+  None,
   P,
   I,
   D,
   DLambda,
   SetPoint,
   InputScale,
-  InputBias
+  InputBias,
 };
 
-enum class GlobalVar
+enum class GlobalVar : uint8_t
 {
   NumServos,
   PidEnabled,
@@ -386,6 +386,11 @@ void mySerialEvent()
   }
 }
 
+union FloatAsBytes {
+  float floatVal;
+  unsigned char byteVal[4];
+};
+
 void handleSerialCommand()
 {
   switch (Command(serialBuf[1]))
@@ -402,7 +407,14 @@ void handleSerialCommand()
       }
 
       auto& servoPid = PidServos[int(serialBuf[2])];
-      const auto value = *reinterpret_cast<float*>(serialBuf + 4);
+
+      FloatAsBytes fab;
+      fab.byteVal[0] = serialBuf[4];
+      fab.byteVal[1] = serialBuf[5];
+      fab.byteVal[2] = serialBuf[6];
+      fab.byteVal[3] = serialBuf[7];
+      const auto value = fab.floatVal;
+
       switch (ServoParam(serialBuf[3]))
       {
       case ServoParam::P: servoPid._pid._pFactor = value;
@@ -489,7 +501,13 @@ void handleSerialCommand()
   case Command::SetGlobalVar:
     {
       const auto var = static_cast<GlobalVar>(serialBuf[2]);
-      const auto value = *reinterpret_cast<float*>(serialBuf + 4);
+
+      FloatAsBytes fab;
+      fab.byteVal[0] = serialBuf[3];
+      fab.byteVal[1] = serialBuf[4];
+      fab.byteVal[2] = serialBuf[5];
+      fab.byteVal[3] = serialBuf[6];
+      const auto value = fab.floatVal;
 
       switch (var)
       {
@@ -507,7 +525,6 @@ void handleSerialCommand()
           PidServos[i] = PidServo();
           PidServos[i].reset();
         }
-        PidServo::enabled = false;
         break;
       case GlobalVar::PidEnabled:
         PidServo::enabled = value != 0;
@@ -596,7 +613,8 @@ unsigned long calcEepromCrc(int start, int end)
 
 void initServosFromEeprom()
 {
-  if (loadEeprom()) {
+  if (loadEeprom())
+  {
     Serial.println(F("LOG: Loaded PIDs from EEPROM"));
     return;
   }

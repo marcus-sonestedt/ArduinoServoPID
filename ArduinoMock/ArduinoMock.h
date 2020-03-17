@@ -159,15 +159,11 @@ public:
   {
     _callback = callback;
   }
-
-  template <class T>
-  void writeMock(const T& value)
+  
+  void writeMock(const unsigned char* str, const int32_t strLen)
   {
-    std::stringstream ss;
-    ss << value;
-
-    for (auto c : ss.str())
-      _dataToArduino.push(c);
+    for (auto p = str; p < str + strLen; p++)
+      _dataToArduino.push(*p);
   }
 
   std::string readMock()
@@ -206,8 +202,8 @@ private:
       _callback();
   }
 
-  std::queue<char> _dataToArduino;
-  std::queue<char> _dataFromArduino;
+  std::queue<unsigned char> _dataToArduino;
+  std::queue<unsigned char> _dataFromArduino;
   void (*          _callback)() = nullptr;
 };
 
