@@ -10,7 +10,7 @@ using System.Windows;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Marcus Sonestedt")]
 [assembly: AssemblyProduct("Arduiono ServoPID Control")]
-[assembly: AssemblyCopyright("Copyright © Marcus Sonestedt 2019")]
+[assembly: AssemblyCopyright("Copyright © Marcus Sonestedt 2019-2020")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

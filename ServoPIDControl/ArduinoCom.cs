@@ -424,10 +424,14 @@ namespace ServoPIDControl
                     switch (Model.ConnectedPort)
                     {
                         case "Mock":
-                            _port = CreateMockPort();
+                            _port = new MockSerialPort();
                             break;
                         case "Simulator":
-                            _port = CreateSimulatorPort();
+#pragma warning disable IDE0067 // Dispose objects before losing scope
+                            var sim = new ArduinoSimulator();
+                            sim.Serial.Disposed += (s, a) => sim.Dispose();
+                            _port = sim.Serial;
+#pragma warning restore IDE0067 // Dispose objects before losing scope
                             break;
                         default:
                             _port = new SerialPort(Model.ConnectedPort)
@@ -462,20 +466,6 @@ namespace ServoPIDControl
             SendCommand(GetGlobalVars);
 
             //SendCommand(Command.EnableRegulator, (byte) (Model.Enabled ? 1 : 0));
-        }
-
-        private static ISerialPort CreateSimulatorPort()
-        {
-#pragma warning disable IDE0067 // Dispose objects before losing scope
-             var sim = new ArduinoSimulator();
-             sim.Serial.Disposed += (s, a) => sim.Dispose();
-             return sim.Serial;
-#pragma warning restore IDE0067 // Dispose objects before losing scope
-        }
-
-        private static ISerialPort CreateMockPort()
-        {
-            return new MockSerialPort();
         }
 
         public void Dispose()

@@ -194,6 +194,7 @@
   </Target>
   <Import Project="..\packages\GitVersionTask.5.0.0\build\GitVersionTask.targets" Condition="Exists('..\packages\GitVersionTask.5.0.0\build\GitVersionTask.targets')" />
   <PropertyGroup>
-    <PostBuildEvent>copy /y $(TargetPath) $(SolutionDir)\$(PlatformName)\$(Configuration)</PostBuildEvent>
+    <PostBuildEvent>
+    </PostBuildEvent>
   </PropertyGroup>
 </Project>

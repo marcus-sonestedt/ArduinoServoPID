@@ -109,7 +109,8 @@
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
     </Link>
     <PostBuildEvent>
-      <Command>copy /Y $(TargetPath) ..\ServoPidControl\bin\$(Configuration)\</Command>
+      <Command>copy /Y $(TargetPath) ..\ServoPidControl\bin\$(Configuration)\
+copy /Y $(TargetDir)\$(TargetName).pdb  ..\ServoPidControl\bin\$(Configuration)\</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -129,7 +130,8 @@
       <EnableUAC>false</EnableUAC>
     </Link>
     <PostBuildEvent>
-      <Command>copy /Y $(TargetPath) ..\ServoPidControl\bin\$(Configuration)\</Command>
+      <Command>copy /Y $(TargetPath) ..\ServoPidControl\bin\$(Configuration)\
+copy /Y $(TargetDir)\$(TargetName).pdb  ..\ServoPidControl\bin\$(Configuration)\</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -153,7 +155,8 @@
       <EnableUAC>false</EnableUAC>
     </Link>
     <PostBuildEvent>
-      <Command>copy /Y $(TargetPath) ..\ServoPidControl\bin\$(Configuration)\</Command>
+      <Command>copy /Y $(TargetPath) ..\ServoPidControl\bin\$(Configuration)\
+copy /Y $(TargetDir)\$(TargetName).pdb  ..\ServoPidControl\bin\$(Configuration)\</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -177,7 +180,8 @@
       <EnableUAC>false</EnableUAC>
     </Link>
     <PostBuildEvent>
-      <Command>copy /Y $(TargetPath) ..\ServoPidControl\bin\$(Configuration)\</Command>
+      <Command>copy /Y $(TargetPath) ..\ServoPidControl\bin\$(Configuration)\
+copy /Y $(TargetDir)\$(TargetName).pdb  ..\ServoPidControl\bin\$(Configuration)\</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

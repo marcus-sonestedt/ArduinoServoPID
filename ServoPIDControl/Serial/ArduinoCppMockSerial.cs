@@ -26,6 +26,8 @@ namespace ServoPIDControl.Serial
             {
                 _callBackTriggered = true;
             };
+
+            SetCallback(_serialCallback);
         }
 
         public void Dispose()
@@ -34,8 +36,9 @@ namespace ServoPIDControl.Serial
                 return;
 
             Log.Info($"Disposing {nameof(ArduinoCppMockSerial)}");
-
             _disposed = true;
+
+            SetCallback(null);
             Close();
             Disposed?.Invoke(this, EventArgs.Empty);
         }
@@ -44,8 +47,6 @@ namespace ServoPIDControl.Serial
         {
             Log.Debug("Open()");
 
-            SetCallback(_serialCallback);
-
             IsOpen = true;
         }
 
@@ -53,7 +54,6 @@ namespace ServoPIDControl.Serial
         {
             Log.Debug("Close()");
 
-            SetCallback(null);
 
             IsOpen = false;
         }
@@ -108,7 +108,7 @@ namespace ServoPIDControl.Serial
 
         public event SerialDataReceivedEventHandler DataReceived;
 
-        private const string DllName = "ArduinoMock_Win32.dll";
+        private const string DllName = "ArduinoMock.dll";
         private const CallingConvention CallConvention = CallingConvention.Cdecl;
 
         [DllImport(DllName, CharSet = CharSet.Ansi, EntryPoint = "Serial_Write", CallingConvention = CallConvention)]
