@@ -6,6 +6,9 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestServoPID", "TestServoPID\TestServoPID.vcxproj", "{EC0E1199-378D-4EF8-9BE4-181B31DDED7C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServoPidControl", "ServoPIDControl\ServoPidControl.csproj", "{96237EB6-57EC-451E-A34B-A645B3D5E17B}"
+	ProjectSection(ProjectDependencies) = postProject
+		{7E81F72B-C6CE-4A4F-86F4-D710EED91E6C} = {7E81F72B-C6CE-4A4F-86F4-D710EED91E6C}
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{CC0AF209-905C-441A-B514-14BEF063E465}"
 	ProjectSection(SolutionItems) = preProject

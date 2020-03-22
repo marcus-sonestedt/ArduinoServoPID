@@ -43,27 +43,44 @@ public:
 
   void reset(float currentValue)
   {
-    _integral = 0.0;
+    const auto error = _setPoint - currentValue;
+
+    _integral = 0.0f;
+
+    if (_iFactor)
+      _integral += error / _iFactor;
+
+    if (_pFactor)
+      _iFactor -= error / _pFactor;
+
     _prevValue = currentValue;
     _dValueFiltered = 0.0f;
   }
 
   float regulate(float currentValue, float dt)
   {
-    const auto error = setPoint - currentValue;
+    const auto error = _setPoint - currentValue;
     const auto dValue = (currentValue - _prevValue) / dt;
 
     _prevValue = currentValue;
     _dValueFiltered = (dValue * _dLambda) + (_dValueFiltered * (1.0f - _dLambda));
-    _integral += error * dt;
 
-    // limit "energy" storage in integrator
-    _integral = constrain(_integral, -MaxIntegratorStore, MaxIntegratorStore);
+    if (_iFactor != 0) {
+      _integral += error * dt;
+      // limit "energy" storage in integrator
+      _integral = constrain(_integral, -MaxIntegratorStore, MaxIntegratorStore);
+    }
 
     return _pFactor * error + _iFactor * _integral - _dFactor * _dValueFiltered;
   }
 
-  float setPoint = 0;
+  void setPoint(float setPoint)
+  {
+    _integral = 0.0f;
+    _setPoint = setPoint;
+  }
+
+  float _setPoint = 0;
 
   float _pFactor = 0;
   float _iFactor = 0;
@@ -111,14 +128,21 @@ class ServoBase
 public:
   static uint16_t MinAngle;
   static uint16_t MaxAngle;
+
+  static uint16_t MinAngleRange;
+  static uint16_t MaxAngleRange;
 };
 
 uint16_t ServoBase::MinAngle = 80;
 uint16_t ServoBase::MaxAngle = 100;
 
+uint16_t ServoBase::MinAngleRange = 0;
+uint16_t ServoBase::MaxAngleRange = 320;
+
 #if USE_PCA9685 == 1
 
 Adafruit_PWMServoDriver gPwmController = Adafruit_PWMServoDriver();
+const float SERVO_RESET_VALUE = (ServoBase::MaxAngle + ServoBase::MinAngle) / 2.0f;
 
 class PCA9685Servo : public ServoBase
 {
@@ -134,20 +158,23 @@ public:
 
   void reset()
   {
+    write(SERVO_RESET_VALUE); 
   }
 
   // ReSharper disable once CppMemberFunctionMayBeConst
   void write(const float angle)
   {
-    const auto cAngle = constrain(angle, float(MinAngle), float(MaxAngle));
-    const auto pwm = (_pwmMax - _pwmMin) * ((cAngle - MinAngle) / (float(MaxAngle) - float(MinAngle))) + _pwmMin;
-    const auto cPwm = constrain(pwm, _pwmMin, _pwmMax);
-    gPwmController.setPWM(_pin, 0, uint16_t(cPwm));
+    const auto constrainedAngle = constrain(angle, float(MinAngle), float(MaxAngle));
+    const auto normalizedAngle = (constrainedAngle - MinAngleRange) / (float(MaxAngleRange) - float(MinAngleRange));
+    const auto pwm = (_pwmMax - _pwmMin) * normalizedAngle + _pwmMin;
+    const auto constrainedPwm = constrain(pwm, _pwmMin, _pwmMax);
+
+    gPwmController.setPWM(_pin, 0, uint16_t(constrainedPwm));
   }
 
   uint8_t  _pin = 0;
-  uint16_t _pwmMin = 150;
-  uint16_t _pwmMax = 600;
+  uint16_t _pwmMin = 544;
+  uint16_t _pwmMax = 2400;
 };
 
 #else
@@ -173,12 +200,13 @@ public:
     void reset()
     {
         Servo::attach(_pin, _pwmMin, _pwmMax);
+        write(SERVO_RESET_VALUE);
     }
 
 private:
     uint8_t _pin = 0;
-    uint16_t _pwmMin = 150;
-    uint16_t _pwmMax = 600;
+    uint16_t _pwmMin = 544;
+    uint16_t _pwmMax = 2400;
 };
 
 #endif
@@ -198,18 +226,20 @@ public:
     _analogPin = analogPin;
   }
 
-  void setPoint(float setPoint)
+  void setPoint(float value)
   {
-    _pid.setPoint = setPoint;
+    _pid.setPoint(value);
   }
 
   void run(const float dt)
   {
     _input = _analogPin.read();
 
-    if (enabled)
+    if (enabled) {
       _output = _pid.regulate(_input, dt);
-
+    } else  {
+      _output = SERVO_RESET_VALUE;
+    }
     _servo.write(_output);
   }
 
@@ -414,7 +444,7 @@ void handleSerialCommand()
       }
 
       auto& servoPid = PidServos[int(serialBuf[2])];
-      const auto value = floatFromBytes(serialBuf);
+      const auto value = floatFromBytes(serialBuf + 4);
 
       switch (ServoParam(serialBuf[3]))
       {
@@ -445,6 +475,12 @@ void handleSerialCommand()
 
   case Command::EnableRegulator:
     PidServo::enabled = serialBuf[1] != 0;
+    for (auto i = 0u; i < numServos; ++i) // NOLINT(modernize-loop-convert)
+    {
+      auto& servo = PidServos[i];
+      servo.reset();
+    }
+
     Serial.print(F("OK"));
     Serial.print('\n');
     break;
@@ -471,7 +507,7 @@ void handleSerialCommand()
       Serial.print(' ');
       Serial.print(servo._pid._dLambda);
       Serial.print(' ');
-      Serial.print(servo._pid.setPoint);
+      Serial.print(servo._pid._setPoint);
       Serial.print('\n');
     }
     break;
@@ -502,7 +538,7 @@ void handleSerialCommand()
   case Command::SetGlobalVar:
     {
       const auto var = static_cast<GlobalVar>(serialBuf[2]);
-      const auto value = floatFromBytes(serialBuf);
+      const auto value = floatFromBytes(serialBuf + 3);
 
       switch (var)
       {
@@ -523,6 +559,11 @@ void handleSerialCommand()
         break;
       case GlobalVar::PidEnabled:
         PidServo::enabled = value != 0;
+        for (auto i = 0u; i < numServos; ++i) // NOLINT(modernize-loop-convert)
+        {
+          auto& servo = PidServos[i];
+          servo.reset();
+        }
         break;
       case GlobalVar::PidMaxIntegratorStore:
         PID::MaxIntegratorStore = uint16_t(value);
@@ -660,7 +701,7 @@ void resetToDefaultValues()
     PidServos[i].reset();
 
   PidServo::enabled = false;
-  PID::MaxIntegratorStore = 50;
+  PID::MaxIntegratorStore = 5000;
   AnalogPin::Range = 320;
   ServoBase::MinAngle = 80;
   ServoBase::MaxAngle = 100;

@@ -176,7 +176,6 @@ namespace ServoPIDControl.Model
         public List<float> Times { get; } = new List<float>();
         public List<float> SetPoints { get; } = new List<float>();
         public List<float> Inputs { get; } = new List<float>();
-
         public List<float> Outputs { get; } = new List<float>();
         // ReSharper restore MemberInitializerValueIgnored
 

@@ -15,23 +15,21 @@ namespace ServoPIDControl
     {
         internal class PhysicalModel
         {
-            public double DamperConstant { get; set; } = 0.5;
-            public double Mass { get; set; } = 1;
+            public double Acceleration { get; private set; }
+            public double DamperConstant { get; set; } = 0.01;
+            public double Mass { get; set; } = 0.4;
             public double SpringConstant { get; set; } = 10;
             public double Position { get; private set; }
             public double Velocity { get; private set; }
 
-            public void Update(double signal, double dt)
+            public void Update(double extForce, double attachPos, double dt)
             {
-                // signal is 0..1 - modeled as attachment point of spring
-
-                var attachPosition = signal * 10 - 5;
-                var force = (attachPosition - Position) * SpringConstant;
+                var force = (attachPos - Position) * SpringConstant;
+                force += extForce;
                 force += Velocity * -DamperConstant;
 
-                var acceleration = force / Mass;
-
-                Velocity += acceleration * dt;
+                Acceleration = force / Mass;
+                Velocity += Acceleration * dt;
                 Position += Velocity * dt;
 
                 Position =
@@ -88,21 +86,18 @@ namespace ServoPIDControl
         {
             var dt = _loopTimer.Interval.TotalSeconds;
 
-            for (var i = 0; i < _on.Length; ++i)
+
+            for (var i = 0; i < Math.Min(4, _on.Length); ++i)
             {
-                // generate 0..1 signal
-                var signal = (Math.Pow(Math.Sin(3 * _arduinoTimeMicros * 1e-6), (i * 2 + 1)) + 1) * 0.5;
+                // generate external force (road bumps)
+                var externalForce = Math.Pow(Math.Sin(3 * _arduinoTimeMicros * 1e-6), (i * 2 + 1)) * 10.0f;
+                var servoPos = (((_off[i] - _on[i]) - 544.0f) / (2400.0f - 544.0f)) * 320.0f;
 
-                var physModel = _physModels[i];
-                physModel.Update(signal, dt);
-                var value = physModel.Position + 90;
+                _physModels[i].Update(externalForce, servoPos - 90, dt);
 
-                // vary between 80 and 100 on 320 deg scale
-                value *= 1 / 320.0;
-
-                // analog inputs are 10-bit integers
-                value *= 1023;
-
+                var value = _physModels[i].Position + 90;
+                value *= 1 / 320.0; // vary between 80 and 100 on 320 deg scale
+                value *= 1023; // analog inputs are 10-bit integers
                 SetAnalogInput((byte) i, (ushort)value);
             }
         }
@@ -119,8 +114,6 @@ namespace ServoPIDControl
                 case nameof(Serial.IsOpen):
                     Log.Info("Stopping loop timer");
                     _loopTimer.Stop();
-                    break;
-                default:
                     break;
             }
         }

@@ -70,6 +70,7 @@ namespace ServoPIDControl
         private void UpdateGraph()
         {
             ChartGrid.Children.Clear();
+            ChartGrid.Background = new SolidColorBrush(Color.FromRgb(40, 40, 40));
 
             if (Model.CurrentGraphServo == null)
                 return;
@@ -87,6 +88,7 @@ namespace ServoPIDControl
                     ShowMarkers = false,
                     StrokeThickness = 2,
                 };
+
                 ChartGrid.Children.Add(lg);
                 lg.Plot(series.X, series.Y);
             }
