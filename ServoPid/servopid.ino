@@ -43,14 +43,14 @@ public:
 
   void reset(float currentValue)
   {
-    _integral = 0.0f;
+    _integral = 0.0;
     _prevValue = currentValue;
     _dValueFiltered = 0.0f;
   }
 
-  float regulate(float currentValue, float requestedValue, float dt)
+  float regulate(float currentValue, float dt)
   {
-    const auto error = requestedValue - currentValue;
+    const auto error = setPoint - currentValue;
     const auto dValue = (currentValue - _prevValue) / dt;
 
     _prevValue = currentValue;
@@ -62,6 +62,8 @@ public:
 
     return _pFactor * error + _iFactor * _integral - _dFactor * _dValueFiltered;
   }
+
+  float setPoint = 0;
 
   float _pFactor = 0;
   float _iFactor = 0;
@@ -93,7 +95,7 @@ public:
   float read() const
   {
     const auto value = analogRead(_pin);
-    const auto angle = ((value * _scale) + _bias) * Range;
+    const auto angle = (_bias + _scale * value) * Range;
     return angle;
   }
 
@@ -138,7 +140,7 @@ public:
   void write(const float angle)
   {
     const auto cAngle = constrain(angle, float(MinAngle), float(MaxAngle));
-    const auto pwm = _pwmMin + (_pwmMax - _pwmMin) * ((cAngle - MinAngle) / (float(MaxAngle) - float(MinAngle)));
+    const auto pwm = (_pwmMax - _pwmMin) * ((cAngle - MinAngle) / (float(MaxAngle) - float(MinAngle))) + _pwmMin;
     const auto cPwm = constrain(pwm, _pwmMin, _pwmMax);
     gPwmController.setPWM(_pin, 0, uint16_t(cPwm));
   }
@@ -194,12 +196,11 @@ public:
     _servo.attach(servoPin, servoMin, servoMax);
     _pid = pid;
     _analogPin = analogPin;
-    _setPoint = 90.0f;
   }
 
   void setPoint(float setPoint)
   {
-    _setPoint = setPoint;
+    _pid.setPoint = setPoint;
   }
 
   void run(const float dt)
@@ -207,7 +208,7 @@ public:
     _input = _analogPin.read();
 
     if (enabled)
-      _output = _pid.regulate(_input, _setPoint, dt);
+      _output = _pid.regulate(_input, dt);
 
     _servo.write(_output);
   }
@@ -215,7 +216,6 @@ public:
   void reset()
   {
     _input = _analogPin.read();
-    _output = _setPoint;
     _servo.reset();
     _pid.reset(_input);
   }
@@ -228,7 +228,6 @@ public:
   PID       _pid;
   AnalogPin _analogPin;
 
-  float _setPoint = 90.0f;
   float _input = 0;
   float _output = 0;
 };
@@ -246,7 +245,7 @@ float dt = 0;
 
 void initServosFromEeprom();
 
-const int crcAddress = EEPROM.length() - sizeof(unsigned long);
+const int crcAddress = []() { return EEPROM.length() - sizeof(unsigned long); } ();
 
 void setup()
 {
@@ -387,9 +386,17 @@ void mySerialEvent()
 }
 
 union FloatAsBytes {
-  float floatVal;
-  unsigned char byteVal[4];
+  float floatValue;
+  unsigned char byteValue[4];
 };
+
+float floatFromBytes(const unsigned char* buf)
+{
+  FloatAsBytes fab;
+  for (auto i = 0; i < 4; ++i)
+    fab.byteValue[i] = buf[i];
+  return fab.floatValue;
+}
 
 void handleSerialCommand()
 {
@@ -407,13 +414,7 @@ void handleSerialCommand()
       }
 
       auto& servoPid = PidServos[int(serialBuf[2])];
-
-      FloatAsBytes fab;
-      fab.byteVal[0] = serialBuf[4];
-      fab.byteVal[1] = serialBuf[5];
-      fab.byteVal[2] = serialBuf[6];
-      fab.byteVal[3] = serialBuf[7];
-      const auto value = fab.floatVal;
+      const auto value = floatFromBytes(serialBuf);
 
       switch (ServoParam(serialBuf[3]))
       {
@@ -425,7 +426,7 @@ void handleSerialCommand()
         break;
       case ServoParam::DLambda: servoPid._pid._dLambda = value;
         break;
-      case ServoParam::SetPoint: servoPid._setPoint = value;
+      case ServoParam::SetPoint: servoPid.setPoint(value);
         break;
       case ServoParam::InputScale: servoPid._analogPin._scale = value;
         break;
@@ -470,7 +471,7 @@ void handleSerialCommand()
       Serial.print(' ');
       Serial.print(servo._pid._dLambda);
       Serial.print(' ');
-      Serial.print(servo._setPoint);
+      Serial.print(servo._pid.setPoint);
       Serial.print('\n');
     }
     break;
@@ -501,13 +502,7 @@ void handleSerialCommand()
   case Command::SetGlobalVar:
     {
       const auto var = static_cast<GlobalVar>(serialBuf[2]);
-
-      FloatAsBytes fab;
-      fab.byteVal[0] = serialBuf[3];
-      fab.byteVal[1] = serialBuf[4];
-      fab.byteVal[2] = serialBuf[5];
-      fab.byteVal[3] = serialBuf[6];
-      const auto value = fab.floatVal;
+      const auto value = floatFromBytes(serialBuf);
 
       switch (var)
       {
@@ -672,14 +667,14 @@ void resetToDefaultValues()
 }
 
 template <typename T>
-void eepromPutInc(unsigned int& addr, const T value)
+void eepromPutInc(int& addr, const T value)
 {
   EEPROM.put(addr, value);
   addr += sizeof(T);
 }
 
 template <typename T>
-void eepromGetInc(unsigned int& addr, T& value)
+void eepromGetInc(int& addr, T& value)
 {
   EEPROM.get(addr, value);
   addr += sizeof(T);
@@ -696,7 +691,7 @@ bool loadEeprom()
   if (computedCrc != storedCrc)
     return false;
 
-  auto addr = 0u;
+  auto addr = 0;
   eepromGetInc(addr, numServos);
   eepromGetInc(addr, PidServo::enabled);
   eepromGetInc(addr, PID::MaxIntegratorStore);
@@ -717,7 +712,7 @@ void saveEeprom()
 {
   Serial.println(F("LOG: Saving settings to EEPROM"));
 
-  auto addr = 0u;
+  auto addr = 0;
   eepromPutInc(addr, numServos);
   eepromPutInc(addr, PidServo::enabled);
   eepromPutInc(addr, PID::MaxIntegratorStore);
