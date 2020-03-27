@@ -47,11 +47,13 @@ public:
 
     _integral = 0.0f;
 
-    if (_iFactor)
-      _integral += error / _iFactor;
+    if (_iFactor != 0)
+      _integral = error / _iFactor;
+    else
+      _integral = 0.0f;
 
-    if (_pFactor)
-      _iFactor -= error / _pFactor;
+    if (_pFactor != 0)
+      _integral -= error / _pFactor;
 
     _prevValue = currentValue;
     _dValueFiltered = 0.0f;
