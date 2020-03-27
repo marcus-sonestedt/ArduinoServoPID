@@ -2,6 +2,6 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <None Include="servopid.ino" />
-    <None Include="ArduinoCompile.bat" />
+    <None Include="ArduinoCompile.ps1" />
   </ItemGroup>
 </Project>

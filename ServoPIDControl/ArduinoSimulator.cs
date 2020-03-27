@@ -33,7 +33,7 @@ namespace ServoPIDControl
                 Application.Current.Dispatcher ?? Dispatcher.CurrentDispatcher
             )
             {
-                Interval = TimeSpan.FromMilliseconds(10),
+                Interval = TimeSpan.FromMilliseconds(50),
                 IsEnabled = false,
             };
 
@@ -46,20 +46,24 @@ namespace ServoPIDControl
 
         private void LoopTimerOnTick(object sender, EventArgs eventArgs)
         {
-            _arduinoTimeMicros += (uint) _loopTimer.Interval.TotalMilliseconds * 1000;
-            SetMicros(_arduinoTimeMicros);
+            var subSteps = 10;
+            var dt = _loopTimer.Interval.TotalSeconds / subSteps;
 
-            Arduino_Loop();
-            
-            Serial.SendReceivedEvents();
-            ReadArduinoExternalState();
-            SimulateInputs();
+            for (var i = 0; i < subSteps; ++i)
+            {
+                _arduinoTimeMicros += (uint)(dt * 1e6f);
+                SetMicros(_arduinoTimeMicros);
+
+                Arduino_Loop();
+
+                Serial.SendReceivedEvents();
+                ReadArduinoExternalState();
+                SimulateInputs((float) dt);
+            }
         }
 
-        private void SimulateInputs()
+        private void SimulateInputs(float dt)
         {
-            var dt = _loopTimer.Interval.TotalSeconds;
-
             for (var i = 0; i < Math.Min(4, _on.Length); ++i)
             {
                 // generate external force (road bumps)

@@ -65,7 +65,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <NMakePreprocessorDefinitions>ARDUINO</NMakePreprocessorDefinitions>
-    <NMakeBuildCommandLine>ArduinoCompile.bat</NMakeBuildCommandLine>
+    <NMakeBuildCommandLine>powershell $(ProjectDir)\ArduinoCompile.ps1</NMakeBuildCommandLine>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <NMakePreprocessorDefinitions>ARDUINO</NMakePreprocessorDefinitions>
@@ -82,7 +82,7 @@
   <ItemDefinitionGroup>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <None Include="ArduinoCompile.bat" />
+    <None Include="ArduinoCompile.ps1" />
     <None Include="servopid.ino" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

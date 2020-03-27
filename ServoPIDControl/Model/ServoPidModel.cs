@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
@@ -11,7 +10,7 @@ namespace ServoPIDControl.Model
 {
     public class ServoPidModel : INotifyPropertyChanged
     {
-        public static float TimeSeriesLengthSec = 5.0f;
+        public const float TimeSeriesLengthSec = 10.0f;
 
         private float _p;
         private float _i;
@@ -32,7 +31,7 @@ namespace ServoPIDControl.Model
         {
             Id = id;
 
-#if DEBUG
+#if DEBUG && false
             lock (_timeSeriesLock)
             {
                 const int ts = 500;

@@ -7,9 +7,9 @@ namespace ServoPIDControl
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
         public double Acceleration { get; private set; }
-        public double DamperConstant { get; set; } = 0.0;
-        public double Mass { get; set; } = 0.1;
-        public double SpringConstant { get; set; } = 3;
+        public double DamperConstant { get; set; } = 0.1;
+        public double Mass { get; set; } = 0.5;
+        public double SpringConstant { get; set; } = 10;
         public double Position { get; private set; }
         public double Velocity { get; private set; }
 
