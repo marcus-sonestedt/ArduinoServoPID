@@ -11,7 +11,7 @@
                       mc:Ignorable="d"
                       Title="Arduino Servo PID Control">
     <Window.DataContext>
-        <model:ViewModel x:Name="Model" />
+        <model:AppModel x:Name="Model" />
     </Window.DataContext>
     <Window.Resources>
         <helper:VisibilityToCheckedConverter x:Key="VisibilityToCheckedConverter" />
@@ -67,7 +67,7 @@
         <GridSplitter Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
                       ResizeDirection="Rows" MinHeight="10" />
         <TabControl x:Name="Tab" Grid.Row="2" Grid.Column="1" Margin="5"
-                    SelectionChanged="Tab_OnSelectionChanged">
+                    SelectedIndex="1" SelectionChanged="Tab_OnSelectionChanged">
             <TabItem Header="Log">
                 <RichTextBox x:Name="LogBox"
                              MinHeight="100" IsReadOnly="True" BorderBrush="{x:Null}"

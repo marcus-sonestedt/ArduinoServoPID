@@ -9,10 +9,11 @@ using System.Text;
 
 namespace ServoPIDControl.Serial
 {
-    public class ArduinoCppMockSerial : ISerialPort, INotifyPropertyChanged
+    public sealed class ArduinoCppMockSerial : ISerialPort, INotifyPropertyChanged
     {
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
+        // ReSharper disable once PrivateFieldCanBeConvertedToLocalVariable
         private readonly Action _serialCallback;
         private bool _isOpen;
         private bool _callBackTriggered;
@@ -22,11 +23,7 @@ namespace ServoPIDControl.Serial
 
         public ArduinoCppMockSerial()
         {
-            _serialCallback = () =>
-            {
-                _callBackTriggered = true;
-            };
-
+            _serialCallback = () => _callBackTriggered = true;
             SetCallback(_serialCallback);
         }
 
@@ -124,7 +121,7 @@ namespace ServoPIDControl.Serial
         public event PropertyChangedEventHandler PropertyChanged;
 
         [NotifyPropertyChangedInvocator]
-        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        private void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }

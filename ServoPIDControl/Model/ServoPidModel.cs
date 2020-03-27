@@ -179,14 +179,14 @@ namespace ServoPIDControl.Model
         public List<float> Outputs { get; } = new List<float>();
         // ReSharper restore MemberInitializerValueIgnored
 
-        public struct TimeSeries
+        internal class TimeSeries
         {
-            public float[] X;
-            public float[] Y;
-            public string Name;
+            public float[] X { get; set; }
+            public float[] Y { get; set; }
+            public string Name { get; set; }
         }
 
-        public IEnumerable<TimeSeries> AllTimeSeries
+        internal IEnumerable<TimeSeries> AllTimeSeries
         {
             get
             {

@@ -11,34 +11,8 @@ using static System.Runtime.InteropServices.CallingConvention;
 
 namespace ServoPIDControl
 {
-    public class ArduinoSimulator : IDisposable
+    public sealed class ArduinoSimulator : IDisposable
     {
-        internal class PhysicalModel
-        {
-            public double Acceleration { get; private set; }
-            public double DamperConstant { get; set; } = 0.01;
-            public double Mass { get; set; } = 0.4;
-            public double SpringConstant { get; set; } = 10;
-            public double Position { get; private set; }
-            public double Velocity { get; private set; }
-
-            public void Update(double extForce, double attachPos, double dt)
-            {
-                var force = (attachPos - Position) * SpringConstant;
-                force += extForce;
-                force += Velocity * -DamperConstant;
-
-                Acceleration = force / Mass;
-                Velocity += Acceleration * dt;
-                Position += Velocity * dt;
-
-                Position =
-                    Position < -10 ? -10
-                    : Position > 10 ? 10
-                    : Position;
-            }
-        }
-
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
         private readonly DispatcherTimer _loopTimer;
@@ -48,7 +22,7 @@ namespace ServoPIDControl
         private byte[] _eeprom;
         private uint _arduinoTimeMicros;
 
-        private readonly List<PhysicalModel> _physModels = new List<PhysicalModel>();
+        private readonly List<MassSpringModel> _physModels = new List<MassSpringModel>();
 
         public ArduinoCppMockSerial Serial { get; private set; } = new ArduinoCppMockSerial();
 
@@ -86,11 +60,10 @@ namespace ServoPIDControl
         {
             var dt = _loopTimer.Interval.TotalSeconds;
 
-
             for (var i = 0; i < Math.Min(4, _on.Length); ++i)
             {
                 // generate external force (road bumps)
-                var externalForce = Math.Pow(Math.Sin(3 * _arduinoTimeMicros * 1e-6), (i * 2 + 1)) * 10.0f;
+                var externalForce = Math.Pow(Math.Sin(3 * _arduinoTimeMicros * 1e-6 + i / (2.0f*Math.PI)), 3) * 30.0f;
                 var servoPos = (((_off[i] - _on[i]) - 544.0f) / (2400.0f - 544.0f)) * 320.0f;
 
                 _physModels[i].Update(externalForce, servoPos - 90, dt);
@@ -126,7 +99,7 @@ namespace ServoPIDControl
             if (_on.Length != _physModels.Count)
             {
                 _physModels.Clear();
-                _physModels.AddRange(Enumerable.Repeat(new PhysicalModel(), _on.Length));
+                _physModels.AddRange(Enumerable.Repeat(new MassSpringModel(), _on.Length));
             }
         }
 
@@ -135,7 +108,7 @@ namespace ServoPIDControl
         private const CallingConvention CallingConvention = Cdecl;
 
         [DllImport(DllName, EntryPoint = "Arduino_Setup", CallingConvention = CallingConvention)]
-        public static extern void Arduino_Setup();
+        private static extern void Arduino_Setup();
 
         [DllImport(DllName, EntryPoint = "Arduino_Loop", CallingConvention = CallingConvention)]
         private static extern void Arduino_Loop();
@@ -144,7 +117,7 @@ namespace ServoPIDControl
         private static extern void SetMicros(uint micros);
 
         [DllImport(DllName, EntryPoint = "EEPROM_Size", CallingConvention = CallingConvention)]
-        public static extern int EepromSize();
+        private static extern int EepromSize();
 
         public static byte[] ReadEeprom()
         {

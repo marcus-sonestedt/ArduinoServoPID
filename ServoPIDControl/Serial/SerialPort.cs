@@ -1,11 +1,12 @@
-﻿using System.IO.Ports;
+﻿using System;
+using System.IO.Ports;
 
 namespace ServoPIDControl.Serial
 {
     /// <summary>
     /// Implements <see cref="ISerialPort"/> using <see cref="System.IO.Ports.SerialPort"/>
     /// </summary>
-    public class SerialPort : ISerialPort
+    public sealed class SerialPort : ISerialPort
     {
         private readonly System.IO.Ports.SerialPort _port;
 
@@ -26,7 +27,10 @@ namespace ServoPIDControl.Serial
             set => _port.NewLine = value;
         }
 
-        public void Dispose() => _port.Dispose();
+        public void Dispose()
+        {
+            _port.Dispose();
+        }
 
         public bool IsOpen => _port.IsOpen;
         public string ReadExisting() => _port.ReadExisting();

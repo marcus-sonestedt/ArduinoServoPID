@@ -59,6 +59,8 @@ public:
 
   float regulate(float currentValue, float dt)
   {
+    constexpr auto offset = 90.0f;
+
     const auto error = _setPoint - currentValue;
     const auto dValue = (currentValue - _prevValue) / dt;
 
@@ -71,7 +73,7 @@ public:
       _integral = constrain(_integral, -MaxIntegratorStore, MaxIntegratorStore);
     }
 
-    return _pFactor * error + _iFactor * _integral - _dFactor * _dValueFiltered;
+    return _pFactor * error + _iFactor * _integral - _dFactor * _dValueFiltered + offset;
   }
 
   void setPoint(float setPoint)
@@ -141,7 +143,7 @@ uint16_t ServoBase::MaxAngleRange = 320;
 
 #if USE_PCA9685 == 1
 
-Adafruit_PWMServoDriver gPwmController = Adafruit_PWMServoDriver();
+Adafruit_PWMServoDriver gPwmController;
 const float SERVO_RESET_VALUE = (ServoBase::MaxAngle + ServoBase::MinAngle) / 2.0f;
 
 class PCA9685Servo : public ServoBase
@@ -165,8 +167,8 @@ public:
   void write(const float angle)
   {
     const auto constrainedAngle = constrain(angle, float(MinAngle), float(MaxAngle));
-    const auto normalizedAngle = (constrainedAngle - MinAngleRange) / (float(MaxAngleRange) - float(MinAngleRange));
-    const auto pwm = (_pwmMax - _pwmMin) * normalizedAngle + _pwmMin;
+    const auto normalizedAngle = (constrainedAngle - float(MinAngleRange)) / (float(MaxAngleRange) - float(MinAngleRange));
+    const auto pwm = int((_pwmMax - _pwmMin) * normalizedAngle) + _pwmMin;
     const auto constrainedPwm = constrain(pwm, _pwmMin, _pwmMax);
 
     gPwmController.setPWM(_pin, 0, uint16_t(constrainedPwm));
@@ -267,7 +269,7 @@ bool PidServo::enabled = true;
 ////////////////////////////////////////////////////////////////////
 
 constexpr int MAX_SERVOS = 8;
-unsigned int  numServos = 4;
+unsigned int  numServos = 1;
 PidServo      PidServos[MAX_SERVOS];
 
 float prevTime = 0;
@@ -422,7 +424,7 @@ union FloatAsBytes {
 
 float floatFromBytes(const unsigned char* buf)
 {
-  FloatAsBytes fab;
+  FloatAsBytes fab{};
   for (auto i = 0; i < 4; ++i)
     fab.byteValue[i] = buf[i];
   return fab.floatValue;
@@ -450,7 +452,9 @@ void handleSerialCommand()
       {
       case ServoParam::P: servoPid._pid._pFactor = value;
         break;
-      case ServoParam::I: servoPid._pid._iFactor = value;
+      case ServoParam::I: 
+        servoPid._pid._iFactor = value;
+        servoPid.reset();
         break;
       case ServoParam::D: servoPid._pid._dFactor = value;
         break;
@@ -663,9 +667,9 @@ void resetToDefaultValues()
 {
   Serial.println(F("LOG: Resetting PIDs to default values"));
 
-  numServos = 4;
+  numServos = 1;
 
-  const auto pK = 0.00f;
+  const auto pK = 1.00f;
   const auto iK = 0.00f;
   const auto dK = 0.00f;
   const auto dL = 0.1f;

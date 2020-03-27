@@ -12,8 +12,10 @@ using Ports = System.IO.Ports;
 
 namespace ServoPIDControl.Model
 {
-    public class ViewModel : INotifyPropertyChanged, IDisposable
+    public sealed class AppModel : INotifyPropertyChanged, IDisposable
     {
+        public const int DEFAULT_NUM_SERVOS = 1;
+
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
         private string _connectedPort;
@@ -30,9 +32,9 @@ namespace ServoPIDControl.Model
 
         public event PropertyChangedEventHandler PropertyChanged;
 
-        public ViewModel()
+        public AppModel()
         {
-            for (var i = 0; i < 4; ++i)
+            for (var i = 0; i < DEFAULT_NUM_SERVOS; ++i)
                 Servos.Add(new ServoPidModel(i));
 
             GlobalVar = GlobalVars.ToDictionary(gv => gv.Variable, gv => gv);
@@ -170,7 +172,7 @@ namespace ServoPIDControl.Model
         public IDictionary<GlobalVar, GlobalVarModel> GlobalVar { get; } 
 
         [NotifyPropertyChangedInvocator]
-        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        private void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }

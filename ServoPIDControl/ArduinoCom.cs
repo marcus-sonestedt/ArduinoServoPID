@@ -58,13 +58,13 @@ namespace ServoPIDControl
     /// <summary>
     /// Communicates with Arduino over SerialPort, updating data on either side
     /// </summary>
-    public class ArduinoCom : IDisposable
+    public sealed class ArduinoCom : IDisposable
     {
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
         private static readonly char[] Separators = {'\n', '\r'};
 
         private ISerialPort _port;
-        private ViewModel _model;
+        private AppModel _model;
         private readonly StringBuilder _readBuf = new StringBuilder();
         private readonly DispatcherTimer _timer = new DispatcherTimer {Interval = TimeSpan.FromMilliseconds(50)};
         private readonly object _portLock = new object();
@@ -119,7 +119,7 @@ namespace ServoPIDControl
 
         private void LineReceived(string line)
         {
-            if (line.StartsWith("DT "))
+            if (line.StartsWith("DT ", StringComparison.InvariantCulture))
             {
                 var parts = line.Split(' ');
                 try
@@ -128,7 +128,7 @@ namespace ServoPIDControl
                     Model.MinDt = float.Parse(parts[2], InvariantCulture);
                     Model.MaxDt = float.Parse(parts[3], InvariantCulture);
                 }
-                catch (Exception e)
+                catch (FormatException e)
                 {
                     Log.Error($"Bad DT received: {line} - {e.Message}");
                 }
@@ -136,7 +136,7 @@ namespace ServoPIDControl
                 return;
             }
 
-            if (line.StartsWith("NS "))
+            if (line.StartsWith("NS ", StringComparison.InvariantCulture))
             {
                 var dispatcher = Application.Current.Dispatcher ??
                                  Dispatcher.CurrentDispatcher;
@@ -161,12 +161,12 @@ namespace ServoPIDControl
                 return;
             }
 
-            if (line.StartsWith("SP "))
+            if (line.StartsWith("SP ", StringComparison.InvariantCulture))
             {
                 var parts = line.Split(' ');
                 try
                 {
-                    var servoId = int.Parse(parts[1]);
+                    var servoId = int.Parse(parts[1], InvariantCulture);
                     var servo = Model.Servos[servoId];
                     servo.P = float.Parse(parts[2], InvariantCulture);
                     servo.I = float.Parse(parts[3], InvariantCulture);
@@ -177,7 +177,7 @@ namespace ServoPIDControl
                     if (servoId == Model.Servos.Count - 1)
                         SendCommand(GetServoData, 0x80);
                 }
-                catch (Exception e)
+                catch (FormatException e)
                 {
                     Log.Error($"Bad servo data: {line} - {e.Message}");
                 }
@@ -185,12 +185,12 @@ namespace ServoPIDControl
                 return;
             }
 
-            if (line.StartsWith("SD "))
+            if (line.StartsWith("SD ", StringComparison.InvariantCulture))
             {
                 var parts = line.Split(' ');
                 try
                 {
-                    var servoId = int.Parse(parts[1]);
+                    var servoId = int.Parse(parts[1], InvariantCulture);
                     var servo = Model.Servos[servoId];
                     servo.Input = float.Parse(parts[2], InvariantCulture);
                     servo.Output = float.Parse(parts[3], InvariantCulture);
@@ -199,28 +199,32 @@ namespace ServoPIDControl
 
                     servo.RecordTimePoint();
                 }
-                catch (Exception e)
+                catch (FormatException e)
                 {
                     Log.Error($"Bad servo data: {line} - {e.Message}");
+                }
+                catch (ArgumentOutOfRangeException e)
+                {
+                    Log.Error($"Invalid servo index: {line} - {e.Message}");
                 }
 
                 return;
             }
 
-            if (line.StartsWith("GV "))
+            if (line.StartsWith("GV ", StringComparison.InvariantCulture))
             {
                 var parts = line.Split(' ');
                 try
                 {
                     _updatingGlobalVarsFromArduino = true;
-                    Model.GlobalVar[NumServos].Value = int.Parse(parts[1]);
-                    Model.GlobalVar[PidEnabled].Value = int.Parse(parts[2]);
+                    Model.GlobalVar[NumServos].Value = int.Parse(parts[1], InvariantCulture);
+                    Model.GlobalVar[PidEnabled].Value = int.Parse(parts[2], InvariantCulture);
                     Model.GlobalVar[PidMaxIntegratorStore].Value = float.Parse(parts[3], InvariantCulture);
                     Model.GlobalVar[AnalogInputRange].Value = float.Parse(parts[4], InvariantCulture);
                     Model.GlobalVar[ServoMinAngle].Value = float.Parse(parts[5], InvariantCulture);
                     Model.GlobalVar[ServoMaxAngle].Value = float.Parse(parts[6], InvariantCulture);
                 }
-                catch (Exception e)
+                catch (FormatException e)
                 {
                     Log.Error($"Bad global variable data: {line} - {e.Message}");
                 }
@@ -233,7 +237,7 @@ namespace ServoPIDControl
             }
 
 
-            if (line.StartsWith("ERR: "))
+            if (line.StartsWith("ERR: ", StringComparison.InvariantCulture))
             {
                 Log.Error($"Received: {line}");
 
@@ -251,7 +255,7 @@ namespace ServoPIDControl
                 return;
             }
 
-            if (line.StartsWith("LOG: "))
+            if (line.StartsWith("LOG: ", StringComparison.InvariantCulture))
             {
                 Log.Info($"Received log message: '{line}'");
                 return;
@@ -260,7 +264,7 @@ namespace ServoPIDControl
             Log.Warn($"Unknown message: {line}");
         }
 
-        public ViewModel Model
+        public AppModel Model
         {
             get => _model;
             set
@@ -411,7 +415,7 @@ namespace ServoPIDControl
                         _port.Dispose();
                         _port = null;
 
-                        if (Model is ViewModel model)
+                        if (Model is AppModel model)
                             model.Connected = false;
                     }
                 }

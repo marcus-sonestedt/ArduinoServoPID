@@ -6,7 +6,7 @@ using NLog;
 
 namespace ServoPIDControl.Serial
 {
-    public class MockSerialPort : ISerialPort
+    public sealed class MockSerialPort : ISerialPort
     {
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
         private static readonly Stopwatch StopwatchTotal = Stopwatch.StartNew();
@@ -90,11 +90,11 @@ namespace ServoPIDControl.Serial
                         Send("OK\n");
                         break;
                     default:
-                        if (cmd.StartsWith("\u0008\u0001")) // SetServoParamFloat (8 bytes)
+                        if (cmd.StartsWith("\u0008\u0001", StringComparison.Ordinal)) // SetServoParamFloat (8 bytes)
                         {
                             Send("OK\n");
                         }
-                        else if (cmd.StartsWith("\u0003\u0005")) // get servo data (3 bytes, ignore servo id)
+                        else if (cmd.StartsWith("\u0003\u0005", StringComparison.Ordinal)) // get servo data (3 bytes, ignore servo id)
                         {
                             var t = (float) StopwatchTotal.Elapsed.TotalSeconds * 10;
                             var dt = (float) StopwatchDelta.Elapsed.TotalSeconds;
@@ -106,7 +106,7 @@ namespace ServoPIDControl.Serial
                             Send($"SD 2 {Math.Sin(t) * 6:F3} 1 3 4\n");
                             Send($"SD 3 {Math.Sin(t) * 8:F3} 1.5 3 4\n");
                         }
-                        else if (cmd.StartsWith("\u0007\u0006")) // set global var (7 bytes)
+                        else if (cmd.StartsWith("\u0007\u0006", StringComparison.Ordinal)) // set global var (7 bytes)
                         {
                             Send("OK\n");
                         }
