@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO.Ports;
 using System.Linq;
 using System.Text;
@@ -62,6 +63,8 @@ namespace ServoPIDControl
     {
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
         private static readonly char[] Separators = {'\n', '\r'};
+
+        private readonly Stopwatch _stopWatch = new Stopwatch();
 
         private ISerialPort _port;
         private AppModel _model;
@@ -197,7 +200,7 @@ namespace ServoPIDControl
                     servo.Integrator = float.Parse(parts[4], InvariantCulture);
                     servo.DFiltered = float.Parse(parts[5], InvariantCulture);
 
-                    servo.RecordTimePoint();
+                    servo.RecordTimePoint(SetTime);
                 }
                 catch (FormatException e)
                 {
@@ -432,7 +435,7 @@ namespace ServoPIDControl
                             break;
                         case "Simulator":
 #pragma warning disable IDE0067 // Dispose objects before losing scope
-                            var sim = new ArduinoSimulator();
+                            var sim = new ArduinoSimulator(this);
                             sim.Serial.Disposed += (s, a) => sim.Dispose();
                             _port = sim.Serial;
 #pragma warning restore IDE0067 // Dispose objects before losing scope
@@ -452,6 +455,8 @@ namespace ServoPIDControl
                     _port.WriteLine("RST");
                     _port.DataReceived += PortOnDataReceived;
 
+                    _stopWatch.Restart();
+                    SetTime = float.NaN;
                     Model.Connected = true;
                 }
                 catch (Exception e)
@@ -477,6 +482,14 @@ namespace ServoPIDControl
             _port?.Dispose();
             _port = null;
             Model = null;
+        }
+
+        private float _setTime;
+
+        public float SetTime
+        {
+            get => float.IsNaN(_setTime) ? (float)_stopWatch.Elapsed.TotalSeconds : _setTime;
+            set => _setTime = value;
         }
     }
 }

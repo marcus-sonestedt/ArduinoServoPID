@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using ServoPIDControl.Annotations;
+using JetBrains.Annotations;
 
 namespace ServoPIDControl.Model
 {

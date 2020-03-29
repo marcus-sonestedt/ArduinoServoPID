@@ -9,7 +9,7 @@ using InteractiveDataDisplay.WPF;
 using NLog;
 using NLog.Config;
 using NLog.Targets.Wrappers;
-using ServoPIDControl.Annotations;
+using JetBrains.Annotations;
 using ServoPIDControl.Helper;
 using ServoPIDControl.Model;
 

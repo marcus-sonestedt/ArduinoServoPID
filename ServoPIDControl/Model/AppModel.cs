@@ -6,7 +6,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows.Threading;
 using NLog;
-using ServoPIDControl.Annotations;
+using JetBrains.Annotations;
 using static ServoPIDControl.GlobalVar;
 using Ports = System.IO.Ports;
 

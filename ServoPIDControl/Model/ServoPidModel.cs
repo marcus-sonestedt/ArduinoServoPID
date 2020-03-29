@@ -4,7 +4,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using ServoPIDControl.Annotations;
+using JetBrains.Annotations;
 
 namespace ServoPIDControl.Model
 {
@@ -24,7 +24,6 @@ namespace ServoPIDControl.Model
         private float _integrator;
         private float _dFiltered;
 
-        private readonly Stopwatch _stopWatch = Stopwatch.StartNew();
         private readonly object _timeSeriesLock = new object();
 
         public ServoPidModel(int id)
@@ -213,11 +212,11 @@ namespace ServoPIDControl.Model
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
-        public void RecordTimePoint()
+        public void RecordTimePoint(float elapsedSeconds)
         {
             lock (_timeSeriesLock)
             {
-                Times.Add((float) _stopWatch.Elapsed.TotalSeconds);
+                Times.Add(elapsedSeconds);
                 SetPoints.Add(SetPoint);
                 Inputs.Add(Input);
                 Outputs.Add(Output);

@@ -4,10 +4,8 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Threading;
-using static System.Runtime.InteropServices.CallingConvention;
 
 namespace ServoPIDControl
 {
@@ -23,17 +21,19 @@ namespace ServoPIDControl
         private uint _arduinoTimeMicros;
 
         private readonly List<MassSpringModel> _physModels = new List<MassSpringModel>();
+        private readonly ArduinoCom _com;
 
         public ArduinoCppMockSerial Serial { get; private set; } = new ArduinoCppMockSerial();
 
-        public ArduinoSimulator()
+        public ArduinoSimulator(ArduinoCom com)
         {
+            _com = com;
             _loopTimer = _loopTimer = new DispatcherTimer(
                 DispatcherPriority.Normal,
                 Application.Current.Dispatcher ?? Dispatcher.CurrentDispatcher
             )
             {
-                Interval = TimeSpan.FromMilliseconds(50),
+                Interval = TimeSpan.FromMilliseconds(100),
                 IsEnabled = false,
             };
 
@@ -44,48 +44,14 @@ namespace ServoPIDControl
             Log.Info($"{_on.Length} PWM Servo(s) and {_eeprom.Length} bytes of EEPROM");
         }
 
-        private void LoopTimerOnTick(object sender, EventArgs eventArgs)
-        {
-            var subSteps = 10;
-            var dt = _loopTimer.Interval.TotalSeconds / subSteps;
-
-            for (var i = 0; i < subSteps; ++i)
-            {
-                _arduinoTimeMicros += (uint)(dt * 1e6f);
-                SetMicros(_arduinoTimeMicros);
-
-                Arduino_Loop();
-
-                Serial.SendReceivedEvents();
-                ReadArduinoExternalState();
-                SimulateInputs((float) dt);
-            }
-        }
-
-        private void SimulateInputs(float dt)
-        {
-            for (var i = 0; i < Math.Min(4, _on.Length); ++i)
-            {
-                // generate external force (road bumps)
-                var externalForce = Math.Pow(Math.Sin(3 * _arduinoTimeMicros * 1e-6 + i / (2.0f*Math.PI)), 3) * 30.0f;
-                var servoPos = (((_off[i] - _on[i]) - 544.0f) / (2400.0f - 544.0f)) * 320.0f;
-
-                _physModels[i].Update(externalForce, servoPos - 90, dt);
-
-                var value = _physModels[i].Position + 90;
-                value *= 1 / 320.0; // vary between 80 and 100 on 320 deg scale
-                value *= 1023; // analog inputs are 10-bit integers
-                SetAnalogInput((byte) i, (ushort)value);
-            }
-        }
-
+   
         private void SerialOnPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             switch (e.PropertyName)
             {
                 case nameof(Serial.IsOpen) when Serial.IsOpen:
                     Log.Info("Resetting arduino and starting loop timer");
-                    Arduino_Setup();
+                    ArduinoMockNative.Arduino_Setup();
                     _loopTimer.Start();
                     break;
                 case nameof(Serial.IsOpen):
@@ -94,6 +60,43 @@ namespace ServoPIDControl
                     break;
             }
         }
+
+        private void LoopTimerOnTick(object sender, EventArgs eventArgs)
+        {
+            const int subSteps = 20;
+            var dt = _loopTimer.Interval.TotalSeconds / subSteps;
+
+            for (var i = 0; i < subSteps; ++i)
+            {
+                _arduinoTimeMicros += (uint)(dt * 1e6f);
+                ArduinoMockNative.SetMicros(_arduinoTimeMicros);
+                _com.SetTime = _arduinoTimeMicros * 1e-6f;
+
+                _com.SendCommand(Command.GetServoData, (byte)255);
+                ArduinoMockNative.Arduino_Loop();
+                Serial.SendReceivedEvents();
+                ReadArduinoExternalState();
+                SimulateInputs((float)dt);
+            }
+        }
+
+        private void SimulateInputs(float dt)
+        {
+            for (var i = 0; i < Math.Min(4, _on.Length); ++i)
+            {
+                // generate external force (road bumps)
+                var externalForce = Math.Pow(Math.Sin(3 * _arduinoTimeMicros * 1e-6 + i / (2.0f * Math.PI)), 3) * 30.0f;
+                var servoPos = (((_off[i] - _on[i]) - 544.0f) / (2400.0f - 544.0f)) * 320.0f;
+
+                _physModels[i].Update(externalForce, servoPos - 90, dt);
+
+                var value = _physModels[i].Position + 90;
+                value *= 1 / 320.0; // vary between 80 and 100 on 320 deg scale
+                value *= 1023; // analog inputs are 10-bit integers
+                ArduinoMockNative.SetAnalogInput((byte)i, (ushort)value);
+            }
+        }
+
 
         public void ReadArduinoExternalState()
         {
@@ -108,56 +111,22 @@ namespace ServoPIDControl
         }
 
 
-        private const string DllName = "ArduinoMock";
-        private const CallingConvention CallingConvention = Cdecl;
-
-        [DllImport(DllName, EntryPoint = "Arduino_Setup", CallingConvention = CallingConvention)]
-        private static extern void Arduino_Setup();
-
-        [DllImport(DllName, EntryPoint = "Arduino_Loop", CallingConvention = CallingConvention)]
-        private static extern void Arduino_Loop();
-
-        [DllImport(DllName, EntryPoint = "Set_Micros", CallingConvention = CallingConvention)]
-        private static extern void SetMicros(uint micros);
-
-        [DllImport(DllName, EntryPoint = "EEPROM_Size", CallingConvention = CallingConvention)]
-        private static extern int EepromSize();
-
-        public static byte[] ReadEeprom()
+        private static byte[] ReadEeprom()
         {
-            var size = EepromSize();
+            var size = ArduinoMockNative.EepromSize();
             var data = new byte[size];
-            Read_Eeprom(data, size);
+            ArduinoMockNative.Read_Eeprom(data, size);
             return data;
         }
 
-        [DllImport(DllName, EntryPoint = "EEPROM_Read", CallingConvention = CallingConvention)]
-        private static extern void Read_Eeprom(
-            [MarshalAs(UnmanagedType.LPArray)] byte[] data,
-            int len
-        );
-
-
-        [DllImport(DllName, EntryPoint = "PWM_NumServos", CallingConvention = CallingConvention)]
-        private static extern int PwmNumServos();
-
-        public static (ushort[], ushort[]) ReadPwm()
+        private static (ushort[], ushort[]) ReadPwm()
         {
-            var nServos = PwmNumServos();
+            var nServos = ArduinoMockNative.PwmNumServos();
             var on = new ushort[nServos];
             var off = new ushort[nServos];
-            PWM_Read(on, off);
+            ArduinoMockNative.PWM_Read(on, off);
             return (on, off);
         }
-
-        [DllImport(DllName, EntryPoint = "PWM_Read", CallingConvention = CallingConvention)]
-        private static extern void PWM_Read(
-            [MarshalAs(UnmanagedType.LPArray)] ushort[] on,
-            [MarshalAs(UnmanagedType.LPArray)] ushort[] off
-        );
-
-        [DllImport(DllName, EntryPoint = "AnalogInput_Set", CallingConvention = CallingConvention)]
-        private static extern void SetAnalogInput(byte pin, ushort value);
 
         public void Dispose()
         {
