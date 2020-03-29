@@ -24,7 +24,7 @@ namespace ServoPIDControl.Serial
         public ArduinoCppMockSerial()
         {
             _serialCallback = () => _callBackTriggered = true;
-            SetCallback(_serialCallback);
+            NativeMethods.SetCallback(_serialCallback);
         }
 
         public void Dispose()
@@ -35,7 +35,7 @@ namespace ServoPIDControl.Serial
             Log.Info($"Disposing {nameof(ArduinoCppMockSerial)}");
             _disposed = true;
 
-            SetCallback(null);
+            NativeMethods.SetCallback(null);
             Close();
             Disposed?.Invoke(this, EventArgs.Empty);
         }
@@ -81,7 +81,7 @@ namespace ServoPIDControl.Serial
 
             do
             {
-                Read(buf, buf.Length, out available);
+                NativeMethods.Read(buf, buf.Length, out available);
                 var str = Encoding.ASCII.GetString(buf, 0, Math.Min(available, buf.Length));
                 sb.Append(str);
             } while (available > buf.Length);
@@ -92,7 +92,7 @@ namespace ServoPIDControl.Serial
         public void WriteLine(string s)
         {
             var bytes = Encoding.ASCII.GetBytes($"{s}\n");
-            Write(bytes, bytes.Length);
+            NativeMethods.Write(bytes, bytes.Length);
         }
 
         public void Write(byte[] data, int i, int len)
@@ -100,23 +100,10 @@ namespace ServoPIDControl.Serial
             if (i != 0) 
                 throw new NotImplementedException("Can only handle index = 0");
 
-            Write(data, len);
+            NativeMethods.Write(data, len);
         }
 
         public event SerialDataReceivedEventHandler DataReceived;
-
-        private const string DllName = "ArduinoMock.dll";
-        private const CallingConvention CallConvention = CallingConvention.Cdecl;
-
-        [DllImport(DllName, CharSet = CharSet.Ansi, EntryPoint = "Serial_Write", CallingConvention = CallConvention)]
-        private static extern void Write(byte[] data, int dataLen);
-
-        [DllImport(DllName, CharSet = CharSet.Ansi, EntryPoint = "Serial_Read", CallingConvention = CallConvention)]
-        private static extern void Read(byte[] data, int dataLen, out int available);
-
-        [DllImport(DllName, EntryPoint = "Serial_SetCallback", CallingConvention = CallConvention)]
-        private static extern void SetCallback(Action action);
-
 
         public event PropertyChangedEventHandler PropertyChanged;
 

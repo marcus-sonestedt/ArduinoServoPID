@@ -7,14 +7,13 @@ using System.Runtime.CompilerServices;
 using System.Windows.Threading;
 using NLog;
 using JetBrains.Annotations;
-using static ServoPIDControl.GlobalVar;
 using Ports = System.IO.Ports;
 
 namespace ServoPIDControl.Model
 {
     public sealed class AppModel : INotifyPropertyChanged, IDisposable
     {
-        public const int DEFAULT_NUM_SERVOS = 1;
+        public const int DefaultNumServos = 1;
 
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
@@ -23,7 +22,7 @@ namespace ServoPIDControl.Model
         private float _deltaTime;
         private bool _connected;
         private bool _pollPidData;
-        private string[] _comPorts;
+        private ReadOnlyCollection<string> _comPorts;
 
         private readonly DispatcherTimer _timer;
         private float _minDt;
@@ -34,7 +33,7 @@ namespace ServoPIDControl.Model
 
         public AppModel()
         {
-            for (var i = 0; i < DEFAULT_NUM_SERVOS; ++i)
+            for (var i = 0; i < DefaultNumServos; ++i)
                 Servos.Add(new ServoPidModel(i));
 
             GlobalVar = GlobalVars.ToDictionary(gv => gv.Variable, gv => gv);
@@ -45,11 +44,14 @@ namespace ServoPIDControl.Model
 
         private void UpdateComPorts(object s, EventArgs a)
         {
-            ComPorts = Ports.SerialPort.GetPortNames()
-                .Distinct()
-                .Append("Mock")
-                .Append("Simulator")
-                .ToArray();
+            ComPorts = new ReadOnlyCollection<string>(
+                Ports.SerialPort.GetPortNames()
+                    .Distinct()
+                    .Append("Mock")
+                    .Append("Simulator")
+                    .ToList()
+            );
+
         }
 
         public string ConnectedPort
@@ -100,7 +102,7 @@ namespace ServoPIDControl.Model
             }
         }
 
-        public string[] ComPorts
+        public ReadOnlyCollection<string> ComPorts
         {
             get => _comPorts;
             internal set

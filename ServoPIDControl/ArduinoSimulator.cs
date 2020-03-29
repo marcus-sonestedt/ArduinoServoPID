@@ -51,7 +51,7 @@ namespace ServoPIDControl
             {
                 case nameof(Serial.IsOpen) when Serial.IsOpen:
                     Log.Info("Resetting arduino and starting loop timer");
-                    ArduinoMockNative.Arduino_Setup();
+                    NativeMethods.Arduino_Setup();
                     _loopTimer.Start();
                     break;
                 case nameof(Serial.IsOpen):
@@ -69,11 +69,11 @@ namespace ServoPIDControl
             for (var i = 0; i < subSteps; ++i)
             {
                 _arduinoTimeMicros += (uint)(dt * 1e6f);
-                ArduinoMockNative.SetMicros(_arduinoTimeMicros);
+                NativeMethods.SetMicros(_arduinoTimeMicros);
                 _com.SetTime = _arduinoTimeMicros * 1e-6f;
 
                 _com.SendCommand(Command.GetServoData, (byte)255);
-                ArduinoMockNative.Arduino_Loop();
+                NativeMethods.Arduino_Loop();
                 Serial.SendReceivedEvents();
                 ReadArduinoExternalState();
                 SimulateInputs((float)dt);
@@ -93,7 +93,7 @@ namespace ServoPIDControl
                 var value = _physModels[i].Position + 90;
                 value *= 1 / 320.0; // vary between 80 and 100 on 320 deg scale
                 value *= 1023; // analog inputs are 10-bit integers
-                ArduinoMockNative.SetAnalogInput((byte)i, (ushort)value);
+                NativeMethods.SetAnalogInput((byte)i, (ushort)value);
             }
         }
 
@@ -113,18 +113,18 @@ namespace ServoPIDControl
 
         private static byte[] ReadEeprom()
         {
-            var size = ArduinoMockNative.EepromSize();
+            var size = NativeMethods.EepromSize();
             var data = new byte[size];
-            ArduinoMockNative.Read_Eeprom(data, size);
+            NativeMethods.Read_Eeprom(data, size);
             return data;
         }
 
         private static (ushort[], ushort[]) ReadPwm()
         {
-            var nServos = ArduinoMockNative.PwmNumServos();
+            var nServos = NativeMethods.PwmNumServos();
             var on = new ushort[nServos];
             var off = new ushort[nServos];
-            ArduinoMockNative.PWM_Read(on, off);
+            NativeMethods.PWM_Read(on, off);
             return (on, off);
         }
 

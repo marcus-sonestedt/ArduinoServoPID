@@ -131,7 +131,7 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="ArduinoCom.cs" />
-    <Compile Include="ArduinoMockNative.cs" />
+    <Compile Include="NativeMethods.cs" />
     <Compile Include="ArduinoSimulator.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="MassSpringModel.cs" />
