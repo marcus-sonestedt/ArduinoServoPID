@@ -66,7 +66,7 @@ TEST(TestEEPROM, TestLoadAfterSave)
 
     // corrupt current data
     numServos = 42;
-    std::fill(&PidServos[0], &PidServos[MAX_SERVOS], PidServo());
+    std::fill(std::begin(PidServos), std::end(PidServos), PidServo());
 
     loadEeprom();
     const std::vector<PidServo> currentServos(std::begin(PidServos), std::begin(PidServos) + numServos);

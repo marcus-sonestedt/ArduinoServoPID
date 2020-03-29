@@ -6,12 +6,21 @@
 
 constexpr const char* F(const char* x) { return x; }
 
-// Mock globals
+// whatever
+#define OUTPUT 1
+#define INPUT 2
+#define INPUT_PULLUP 3
 
+// Mock globals
 namespace mock
 {
 MOCK_API extern uint32_t              gMicros;
 MOCK_API extern std::vector<uint16_t> gAnalogPins;
+}
+
+inline void pinMode(int pin, int mode)
+{
+  // bah
 }
 
 inline uint32_t micros()

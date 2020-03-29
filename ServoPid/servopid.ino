@@ -1,20 +1,16 @@
-#define USE_PCA9685 1 // set 0 to use Arduino to directly control servos
+#define USE_PCA9685 0 // set 0 to use Arduino to directly control servos
 
 #ifdef ARDUINO
+#include <EEPROM.h> 
 #if USE_PCA9685 == 1
 #include <Wire.h>
 #include <Adafruit_PWMServoDriver.h>
 #else
 #include <Servo.h>
 #endif
-     #include <EEPROM.h> 
 #else
 #include "../ArduinoMock/ArduinoMock.h"
-
-#if USE_PCA9685 == 1
 #include "../ArduinoMock/AdafruitPwmServoDriverMock.h"
-#endif
-
 #endif
 
 #ifdef SERVOPID_TEST
@@ -143,10 +139,11 @@ uint16_t ServoBase::MaxAngle = 100;
 uint16_t ServoBase::MinAngleRange = 0;
 uint16_t ServoBase::MaxAngleRange = 320;
 
+const float SERVO_RESET_VALUE = (ServoBase::MaxAngle + ServoBase::MinAngle) / 2.0f;
+
 #if USE_PCA9685 == 1
 
 Adafruit_PWMServoDriver gPwmController;
-const float SERVO_RESET_VALUE = (ServoBase::MaxAngle + ServoBase::MinAngle) / 2.0f;
 
 class PCA9685Servo : public ServoBase
 {
@@ -207,7 +204,6 @@ public:
         write(SERVO_RESET_VALUE);
     }
 
-private:
     uint8_t _pin = 0;
     uint16_t _pwmMin = 544;
     uint16_t _pwmMax = 2400;
@@ -270,9 +266,9 @@ bool PidServo::enabled = true;
 
 ////////////////////////////////////////////////////////////////////
 
-constexpr int MAX_SERVOS = 8;
+constexpr int MAX_PID_SERVOS = 8;
 unsigned int  numServos = 1;
-PidServo      PidServos[MAX_SERVOS];
+PidServo      PidServos[MAX_PID_SERVOS];
 
 float prevTime = 0;
 float dt = 0;
@@ -549,10 +545,10 @@ void handleSerialCommand()
       switch (var)
       {
       case GlobalVar::NumServos:
-        if (int(value) >= MAX_SERVOS)
+        if (int(value) >= MAX_PID_SERVOS)
         {
           Serial.print(F("ERR: Max supported num servos is: "));
-          Serial.println(MAX_SERVOS);
+          Serial.println(MAX_PID_SERVOS);
           return;
         }
 
@@ -677,7 +673,7 @@ void resetToDefaultValues()
   const auto dL = 0.1f;
 
   PidServos[0] = PidServo(
-    0, 544, 2400, // servo pin, pwm min, pwm max
+    2, 544, 2400, // servo pin, pwm min, pwm max
     PID(pK, iK, dK, dL),
     AnalogPin(0, 0, 1023) // potentiometer pin, in min, in max
   );
@@ -696,6 +692,8 @@ void resetToDefaultValues()
     PID(pK, iK, dK, dL),
     AnalogPin(3, 0, 1023) // potentiometer pin, in min, in max
   );
+
+  pinMode(2, OUTPUT);
 
   // setPoint => where we want servo to be ([80..100])
   PidServos[0].setPoint(90);
