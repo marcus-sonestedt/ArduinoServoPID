@@ -69,7 +69,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <NMakePreprocessorDefinitions>ARDUINO</NMakePreprocessorDefinitions>
-    <NMakeBuildCommandLine>ArduinoCompile.bat</NMakeBuildCommandLine>
+    <NMakeBuildCommandLine>powershell $(ProjectDir)\ArduinoCompile.ps1</NMakeBuildCommandLine>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <NMakePreprocessorDefinitions>ARDUINO</NMakePreprocessorDefinitions>

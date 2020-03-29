@@ -448,29 +448,45 @@ void handleSerialCommand()
 
       switch (ServoParam(serialBuf[3]))
       {
-      case ServoParam::P: servoPid._pid._pFactor = value;
+      case ServoParam::P: 
+        servoPid._pid._pFactor = value;
         break;
+
       case ServoParam::I: 
         servoPid._pid._iFactor = value;
         servoPid.reset();
         break;
-      case ServoParam::D: servoPid._pid._dFactor = value;
+
+      case ServoParam::D: 
+        servoPid._pid._dFactor = value;
         break;
-      case ServoParam::DLambda: servoPid._pid._dLambda = value;
+
+      case ServoParam::DLambda:
+        servoPid._pid._dLambda = value;
         break;
-      case ServoParam::SetPoint: servoPid.setPoint(value);
+
+      case ServoParam::SetPoint:
+        servoPid.setPoint(value);
         break;
-      case ServoParam::InputScale: servoPid._analogPin._scale = value;
+
+      case ServoParam::InputScale:
+        servoPid._analogPin._scale = value;
         break;
-      case ServoParam::InputBias: servoPid._analogPin._bias = int16_t(value);
+
+      case ServoParam::InputBias:
+        servoPid._analogPin._bias = int16_t(value);
         break;
+
       default:
         Serial.print(F("ERR: Unknown servo parameter "));
         Serial.print(int(serialBuf[3]));
         Serial.print('\n');
         return;
       }
+
+      Serial.println(value);
     }
+
     Serial.print(F("OK"));
     Serial.print('\n');
     break;
@@ -559,6 +575,7 @@ void handleSerialCommand()
           PidServos[i].reset();
         }
         break;
+
       case GlobalVar::PidEnabled:
         PidServo::enabled = value != 0;
         for (auto i = 0u; i < numServos; ++i) // NOLINT(modernize-loop-convert)
@@ -567,24 +584,31 @@ void handleSerialCommand()
           servo.reset();
         }
         break;
+
       case GlobalVar::PidMaxIntegratorStore:
         PID::MaxIntegratorStore = uint16_t(value);
         break;
+
       case GlobalVar::AnalogInputRange:
         AnalogPin::Range = uint16_t(value);
         break;
+
       case GlobalVar::ServoMinAngle:
         ServoBase::MinAngle = uint16_t(value);
         break;
+
       case GlobalVar::ServoMaxAngle:
         ServoBase::MaxAngle = uint16_t(value);
         break;
+
       default:
         Serial.print(F("ERR: Unknown global variable "));
         Serial.print(int(serialBuf[2]));
         Serial.print('\n');
         return;
       }
+
+      Serial.println(value);
     }
     // fallthrough on GV update
   case Command::GetGlobalVars:
@@ -651,11 +675,13 @@ unsigned long calcEepromCrc(int start, int end)
 
 void initServosFromEeprom()
 {
+  /*
   if (loadEeprom())
   {
     Serial.println(F("LOG: Loaded PIDs from EEPROM"));
     return;
   }
+  */
 
   resetToDefaultValues();
   saveEeprom();
