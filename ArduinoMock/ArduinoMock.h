@@ -16,11 +16,17 @@ namespace mock
 {
 MOCK_API extern uint32_t              gMicros;
 MOCK_API extern std::vector<uint16_t> gAnalogPins;
+MOCK_API extern std::vector<uint8_t> gPwmPins;
 }
 
 inline void pinMode(int pin, int mode)
 {
   // bah
+}
+
+inline void analogWrite(int pin, uint8_t pwm)
+{
+  mock::gPwmPins.at(pin) = pwm;
 }
 
 inline uint32_t micros()
