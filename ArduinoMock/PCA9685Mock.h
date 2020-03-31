@@ -28,7 +28,11 @@ public:
     // Called in setup(). The i2c address here is the value of the A0, A1, A2, A3, A4 and
     // A5 pins ONLY, as the class takes care of its internal base address. i2cAddress
     // should be a value between 0 and 61, since only 62 boards can be addressed.
-    void init(byte i2cAddress = 0, byte mode = PCA9685_MODE_OUTPUT_ONACK | PCA9685_MODE_OUTPUT_TPOLE) {}
+    void init(byte i2cAddress = 0, byte mode = PCA9685_MODE_OUTPUT_ONACK | PCA9685_MODE_OUTPUT_TPOLE)
+    {
+      reinterpret_cast<void*>(i2cAddress);
+      reinterpret_cast<void*>(mode);
+    }
 
     // Min: 24Hz, Max: 1526Hz, Default: 200Hz (resolution widens as Hz goes higher)
     void setPWMFrequency(float pwmFrequency) { _pwmFreq = pwmFrequency;  }

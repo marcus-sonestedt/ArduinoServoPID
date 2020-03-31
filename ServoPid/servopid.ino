@@ -9,6 +9,8 @@
 #include <Servo.h>
 #endif
 #else
+#include <cstdint>
+#include <corecrt_math.h>
 #include "../ArduinoMock/ArduinoMock.h"
 #include "../ArduinoMock/AdafruitPwmServoDriverMock.h"
 #endif
@@ -102,7 +104,7 @@ public:
 
   AnalogPin() = default;
 
-  AnalogPin(int pin, uint16_t min, uint16_t max)
+  AnalogPin(uint8_t pin, uint16_t min, uint16_t max)
   {
     _pin = pin;
     _scale = 1.0f / float(max - min);
@@ -184,7 +186,7 @@ class ArduinoServo : public Servo, public ServoBase
 {
 public:
 
-    void attach(const int pin, const int pwmMin, const int pwmMax)
+    void attach(const uint8_t pin, const uint16_t pwmMin, const uint16_t pwmMax)
     {
         _pin = pin;
         _pwmMin = pwmMin;
@@ -194,7 +196,7 @@ public:
 
     void write(float angle)
     {
-        const auto cAngle = constrain(int(angle), MinAngle, MaxAngle);
+        const auto cAngle = constrain(uint16_t(angle), MinAngle, MaxAngle);
         Servo::write(cAngle);
     }
 
@@ -219,7 +221,7 @@ public:
 
   PidServo() = default;
 
-  PidServo(int servoPin, int servoMin, int servoMax, PID pid, AnalogPin analogPin)
+  PidServo(uint8_t servoPin, uint16_t servoMin, uint16_t servoMax, PID pid, AnalogPin analogPin)
   {
     _servo.attach(servoPin, servoMin, servoMax);
     _pid = pid;
@@ -275,10 +277,12 @@ float dt = 0;
 
 void initServosFromEeprom();
 
-const int crcAddress = []() { return EEPROM.length() - sizeof(unsigned long); } ();
+int crcAddress;
 
 void setup()
 {
+  crcAddress = EEPROM.length() - sizeof(unsigned long);
+
 #if USE_PCA9685
   //Wire.begin();                       // Wire must be started first
   //Wire.setClock(400000);              // Supported baud rates are 100kHz, 400kHz, and 1000kHz
@@ -313,7 +317,7 @@ void loop()
   prevTime = t;
 
   // blink LED
-  const auto freq = PidServos[0].enabled ? 3 : 1;
+  const auto freq = PidServos[0].enabled ? 5 : 1;
   const auto ledPwm = uint8_t((sinf(t * 3.14f * freq) + 1) * 127);
   analogWrite(13, ledPwm);
 
@@ -665,7 +669,9 @@ constexpr unsigned long crc_table[16] = {
 
 unsigned long calcEepromCrc(int start, int end)
 { 
-  unsigned long crc = ~0L;
+  unsigned long crc = 0;
+  crc = ~crc;
+
   for (auto index = start; index < end; ++index)
   {
     crc = crc_table[(crc ^ EEPROM[index]) & 0x0f] ^ (crc >> 4);

@@ -4,4 +4,7 @@
     <None Include="servopid.ino" />
     <None Include="ArduinoCompile.ps1" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="__vm\.ServoPid.vsarduino.h" />
+  </ItemGroup>
 </Project>

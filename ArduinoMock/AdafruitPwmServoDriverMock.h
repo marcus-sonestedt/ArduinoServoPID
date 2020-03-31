@@ -55,7 +55,7 @@ public:
 
   void    setPWMFreq(float freq) { _freq = freq; }
   void    setOutputMode(bool totempole) { _outputMode = totempole; }
-  uint8_t getPWM(uint8_t num) { return (_pwmOff.at(num) - _pwmOn.at(num)) / (4096 / 256); }
+  uint8_t getPWM(uint8_t num) { return static_cast<uint8_t>((_pwmOff.at(num) - _pwmOn.at(num)) / (4096 / 256)); }
 
   void setPWM(uint8_t num, uint16_t on, uint16_t off)
   {
