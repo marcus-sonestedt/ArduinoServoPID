@@ -295,6 +295,7 @@ void setup()
     Serial.read();
 
   // initiate timer
+  delay(20);
   prevTime = 1e-6f * float(micros());
 }
 
@@ -449,6 +450,7 @@ void handleSerialCommand()
 
       auto& servoPid = PidServos[int(serialBuf[2])];
       const auto value = floatFromBytes(serialBuf + 4);
+      //Serial.println(value);
 
       switch (ServoParam(serialBuf[3]))
       {
@@ -487,8 +489,6 @@ void handleSerialCommand()
         Serial.print('\n');
         return;
       }
-
-      Serial.println(value);
     }
 
     Serial.println(F("OK"));
@@ -560,6 +560,7 @@ void handleSerialCommand()
     {
       const auto var = static_cast<GlobalVar>(serialBuf[2]);
       const auto value = floatFromBytes(serialBuf + 3);
+      //Serial.println(value);
 
       switch (var)
       {
@@ -610,8 +611,6 @@ void handleSerialCommand()
         Serial.print('\n');
         return;
       }
-
-      Serial.println(value);
     }
     // fallthrough on GV update
   case Command::GetGlobalVars:
