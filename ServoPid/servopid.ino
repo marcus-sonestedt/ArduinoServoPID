@@ -125,6 +125,23 @@ public:
 
 uint16_t AnalogPin::Range = 320;
 
+class Deadband
+{
+public:
+  static int MaxDeviation;
+  int _output;
+
+  int apply(int input)
+  {
+    if (abs(input - _output) > MaxDeviation)
+      _output = input;
+
+    return _output;
+  }
+};
+
+int Deadband::MaxDeviation = 50;
+
 class ServoBase
 {
 public:
@@ -133,6 +150,22 @@ public:
 
   static uint16_t MinAngleRange;
   static uint16_t MaxAngleRange;
+
+  int angleToPwm(float angle)
+  {
+    const auto cAngle = constrain(angle, float(MinAngle), float(MaxAngle));
+    const auto nAngle = (cAngle - float(MinAngleRange)) / (float(MaxAngleRange) - float(MinAngleRange));
+    const auto pwm = int((_pwmMax - _pwmMin) * nAngle) + _pwmMin;
+    const auto cPwm = constrain(pwm, _pwmMin, _pwmMax);
+    const auto dPwm = _deadband.apply(cPwm);
+
+    return dPwm;
+  }
+
+  uint8_t  _pin = 0;
+  uint16_t _pwmMin = 544;
+  uint16_t _pwmMax = 2400;
+  Deadband _deadband;
 };
 
 uint16_t ServoBase::MinAngle = 80;
@@ -142,6 +175,7 @@ uint16_t ServoBase::MinAngleRange = 0;
 uint16_t ServoBase::MaxAngleRange = 320;
 
 const float SERVO_RESET_VALUE = (ServoBase::MaxAngle + ServoBase::MinAngle) / 2.0f;
+
 
 #if USE_PCA9685 == 1
 
@@ -167,17 +201,11 @@ public:
   // ReSharper disable once CppMemberFunctionMayBeConst
   void write(const float angle)
   {
-    const auto constrainedAngle = constrain(angle, float(MinAngle), float(MaxAngle));
-    const auto normalizedAngle = (constrainedAngle - float(MinAngleRange)) / (float(MaxAngleRange) - float(MinAngleRange));
-    const auto pwm = int((_pwmMax - _pwmMin) * normalizedAngle) + _pwmMin;
-    const auto constrainedPwm = constrain(pwm, _pwmMin, _pwmMax);
+    const auto dPwm = angleToPwm(angle);
 
-    gPwmController.setPWM(_pin, 0, uint16_t(constrainedPwm));
+    gPwmController.setPWM(_pin, 0, uint16_t(dPwm));
   }
 
-  uint8_t  _pin = 0;
-  uint16_t _pwmMin = 544;
-  uint16_t _pwmMax = 2400;
 };
 
 #else
@@ -196,8 +224,8 @@ public:
 
     void write(float angle)
     {
-        const auto cAngle = constrain(uint16_t(angle), MinAngle, MaxAngle);
-        Servo::write(cAngle);
+        const auto dPwm = angleToPwm(angle);
+        Servo::write(dPwm);
     }
 
     void reset()
@@ -212,6 +240,7 @@ public:
 };
 
 #endif
+
 
 
 class PidServo
@@ -381,6 +410,7 @@ enum class GlobalVar : uint8_t
   AnalogInputRange,
   ServoMinAngle,
   ServoMaxAngle,
+  DeadbandMaxDeviation
 };
 
 unsigned char serialBuf[128] = {0};
@@ -609,6 +639,10 @@ void handleSerialCommand()
         ServoBase::MaxAngle = uint16_t(value);
         break;
 
+      case GlobalVar::DeadbandMaxDeviation:
+        Deadband::MaxDeviation = uint16_t(value);
+        break;
+
       default:
         Serial.print(F("ERR: Unknown global variable "));
         Serial.print(int(serialBuf[2]));
@@ -632,7 +666,9 @@ void handleSerialCommand()
       Serial.print(' ');
       Serial.print(ServoBase::MaxAngle);
       Serial.print('\n');
-    }
+      Serial.print(Deadband::MaxDeviation);
+      Serial.print('\n');
+  }
     break;
 
   case Command::LoadEeprom:

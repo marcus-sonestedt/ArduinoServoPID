@@ -54,6 +54,7 @@ namespace ServoPIDControl
         AnalogInputRange,
         ServoMinAngle,
         ServoMaxAngle,
+        DeadbandMaxDeviation
     }
 
     /// <summary>
@@ -220,12 +221,14 @@ namespace ServoPIDControl
                 try
                 {
                     _updatingGlobalVarsFromArduino = true;
+
                     Model.GlobalVar[NumServos].Value = int.Parse(parts[1], InvariantCulture);
                     Model.GlobalVar[PidEnabled].Value = int.Parse(parts[2], InvariantCulture);
                     Model.GlobalVar[PidMaxIntegratorStore].Value = float.Parse(parts[3], InvariantCulture);
                     Model.GlobalVar[AnalogInputRange].Value = float.Parse(parts[4], InvariantCulture);
                     Model.GlobalVar[ServoMinAngle].Value = float.Parse(parts[5], InvariantCulture);
                     Model.GlobalVar[ServoMaxAngle].Value = float.Parse(parts[6], InvariantCulture);
+                    Model.GlobalVar[DeadbandMaxDeviation].Value = float.Parse(parts[7], InvariantCulture);
                 }
                 catch (FormatException e)
                 {
