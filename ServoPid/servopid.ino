@@ -726,13 +726,11 @@ unsigned long calcEepromCrc(int start, int end)
 
 void initServosFromEeprom()
 {
-  /*
   if (loadEeprom())
   {
     Serial.println(F("LOG: Loaded PIDs from EEPROM"));
     return;
   }
-  */
 
   resetToDefaultValues();
   saveEeprom();
@@ -806,13 +804,21 @@ void eepromGetInc(int& addr, T& value)
 
 bool loadEeprom()
 {
+  Serial.println(F("LOG: Loading settings from EEPROM"));
+
   unsigned long storedCrc;
   EEPROM.get(crcAddress, storedCrc);
 
   const auto computedCrc = calcEepromCrc(0, crcAddress);
 
-  if (computedCrc != storedCrc)
+  if (computedCrc != storedCrc) {
+    Serial.print(F("ERR: CRC mismatch, stored: "));
+    Serial.print(storedCrc);
+    Serial.print(F(" vs computed: "));
+    Serial.print(storedCrc);
+    Serial.println(' ');
     return false;
+  }
 
   auto addr = 0;
   eepromGetInc(addr, numServos);
@@ -822,6 +828,10 @@ bool loadEeprom()
   eepromGetInc(addr, ServoBase::MinAngle);
   eepromGetInc(addr, ServoBase::MaxAngle);
   eepromGetInc(addr, Deadband::MaxDeviation);
+
+  Serial.print(F("LOG: CRC match. Initializing "));
+  Serial.print(numServos);
+  Serial.println(F(" servo(s)."));
 
   for (auto i = 0; i < numServos; ++i)
   {
