@@ -43,8 +43,8 @@ namespace ServoPIDControl
         D,
         DLambda,
         SetPoint,
-        InputScale,
-        InputBias
+        InputMin,
+        InputMax
     }
 
     public enum GlobalVar : byte
@@ -343,11 +343,11 @@ namespace ServoPIDControl
                 case nameof(ServoPidModel.SetPoint):
                     SendServoParam(servo.Id, ServoParam.SetPoint, servo.SetPoint);
                     break;
-                case nameof(ServoPidModel.InputScale):
-                    SendServoParam(servo.Id, ServoParam.InputScale, servo.InputScale);
+                case nameof(ServoPidModel.InputMin):
+                    SendServoParam(servo.Id, ServoParam.InputMin, servo.InputMin);
                     break;
-                case nameof(ServoPidModel.InputBias):
-                    SendServoParam(servo.Id, ServoParam.InputBias, servo.InputBias);
+                case nameof(ServoPidModel.InputMax):
+                    SendServoParam(servo.Id, ServoParam.InputMax, servo.InputMax);
                     break;
                 default:
                     break;

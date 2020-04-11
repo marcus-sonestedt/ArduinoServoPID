@@ -100,35 +100,32 @@ int PID::MaxIntegratorStore = 5000;
 class AnalogPin
 {
 public:
-  static uint16_t Range;
-
   AnalogPin() = default;
 
   AnalogPin(uint8_t pin, uint16_t min, uint16_t max)
   {
     _pin = pin;
-    _scale = 1.0f / float(max - min);
-    _bias = float(-min);
+    _min = min;
+    _max = max;
   }
 
   float read() const
   {
     const auto value = analogRead(_pin);
-    const auto angle = (_bias + _scale * value) * Range;
+    const auto angle = map(int(value), 0, 1023, _min, _max);
     return angle;
   }
 
-  float   _scale = 1;
-  float   _bias = 0;
+  float   _min = 0;
+  float   _max = 320;
   uint8_t _pin = 0;
 };
-
-uint16_t AnalogPin::Range = 320;
 
 class Deadband
 {
 public:
-  static int MaxDeviation;
+  static int16_t MaxDeviation;
+
   int _output;
 
   int apply(int input)
@@ -140,7 +137,7 @@ public:
   }
 };
 
-int Deadband::MaxDeviation = 50;
+int16_t Deadband::MaxDeviation = 10;
 
 class ServoBase
 {
@@ -159,8 +156,7 @@ public:
   int angleToPwm(float angle)
   {
     const auto cAngle = constrain(angle, float(MinAngle), float(MaxAngle));
-    const auto nAngle = (cAngle - float(MinAngleRange)) / (float(MaxAngleRange) - float(MinAngleRange));
-    const auto pwm = int((_pwmMax - _pwmMin) * nAngle) + _pwmMin;
+    const auto pwm = map(cAngle, float(MinAngleRange), float(MaxAngleRange), _pwmMin, _pwmMax);
     const auto cPwm = constrain(pwm, _pwmMin, _pwmMax);
     const auto dPwm = _deadband.apply(cPwm);
 
@@ -402,8 +398,8 @@ enum class ServoParam : uint8_t
   D,
   DLambda,
   SetPoint,
-  InputScale,
-  InputBias,
+  InputMin,
+  InputMax,
 };
 
 enum class GlobalVar : uint8_t
@@ -514,12 +510,12 @@ void handleSerialCommand()
         servoPid.setPoint(value);
         break;
 
-      case ServoParam::InputScale:
-        servoPid._analogPin._scale = value;
+      case ServoParam::InputMin:
+        servoPid._analogPin._min = int16_t(value);
         break;
 
-      case ServoParam::InputBias:
-        servoPid._analogPin._bias = int16_t(value);
+      case ServoParam::InputMax:
+        servoPid._analogPin._max = int16_t(value);
         break;
 
       default:
@@ -625,7 +621,8 @@ void handleSerialCommand()
         break;
 
       case GlobalVar::AnalogInputRange:
-        AnalogPin::Range = uint16_t(value);
+        Serial.println(F("ERR: AnalogInputRange - deprecated global var"));
+        //AnalogPin::Range = uint16_t(value);
         break;
 
       case GlobalVar::ServoMinAngle:
@@ -657,7 +654,7 @@ void handleSerialCommand()
       Serial.print(' ');
       Serial.print(PID::MaxIntegratorStore);
       Serial.print(' ');
-      Serial.print(AnalogPin::Range);
+      Serial.print(0);
       Serial.print(' ');
       Serial.print(ServoBase::MinAngle);
       Serial.print(' ');
@@ -739,48 +736,49 @@ void resetToDefaultValues()
 
   numServos = 1;
 
-  const auto pK = 1.00f;
+  const auto pK = 0.00f;
   const auto iK = 0.00f;
   const auto dK = 0.00f;
   const auto dL = 0.1f;
 
   PidServos[0] = PidServo(
-    2, 544, 2400, // servo pin, pwm min, pwm max
+    9, 544, 2400, // servo pin, pwm min, pwm max
     PID(pK, iK, dK, dL),
-    AnalogPin(0, 0, 1023) // potentiometer pin, in min, in max
+    AnalogPin(0, 0, 320) // potentiometer pin, in min, in max
   );
   PidServos[1] = PidServo(
     1, 544, 2400, // servo pin, pwm min, pwm max
     PID(pK, iK, dK, dL),
-    AnalogPin(1, 0, 1023) // potentiometer pin, in min, in max
+    AnalogPin(1, 0, 320) // potentiometer pin, in min, in max
   );
   PidServos[2] = PidServo(
     2, 544, 2400, // servo pin, pwm min, pwm max
     PID(pK, iK, dK, dL),
-    AnalogPin(2, 0, 1023) // potentiometer pin, in min, in max
+    AnalogPin(2, 0, 320) // potentiometer pin, in min, in max
   );
   PidServos[3] = PidServo(
     3, 544, 2400, // servo pin, pwm min, pwm max
     PID(pK, iK, dK, dL),
-    AnalogPin(3, 0, 1023) // potentiometer pin, in min, in max
+    AnalogPin(3, 0, 320) // potentiometer pin, in min, in max
   );
 
   pinMode(2, OUTPUT);
 
   // setPoint => where we want servo to be ([80..100])
-  PidServos[0].setPoint(90);
-  PidServos[1].setPoint(90);
-  PidServos[2].setPoint(90);
-  PidServos[3].setPoint(90);
+  PidServos[0].setPoint(ServoBase::servoMidpointAngle());
+  PidServos[1].setPoint(ServoBase::servoMidpointAngle());
+  PidServos[2].setPoint(ServoBase::servoMidpointAngle());
+  PidServos[3].setPoint(ServoBase::servoMidpointAngle());
 
   for (auto i = 0; i < numServos; ++i)
     PidServos[i].reset();
 
   PidServo::enabled = false;
   PID::MaxIntegratorStore = 5000;
-  AnalogPin::Range = 320;
-  ServoBase::MinAngle = 80;
-  ServoBase::MaxAngle = 100;
+  //AnalogPin::Range = 320;
+  ServoBase::MinAngle = 70;
+  ServoBase::MaxAngle = 110;
+  Deadband::MaxDeviation = 5;
 }
 
 template <typename T>
@@ -812,9 +810,10 @@ bool loadEeprom()
   eepromGetInc(addr, numServos);
   eepromGetInc(addr, PidServo::enabled);
   eepromGetInc(addr, PID::MaxIntegratorStore);
-  eepromGetInc(addr, AnalogPin::Range);
+  //eepromGetInc(addr, AnalogPin::Range);
   eepromGetInc(addr, ServoBase::MinAngle);
   eepromGetInc(addr, ServoBase::MaxAngle);
+  eepromGetInc(addr, Deadband::MaxDeviation);
 
   for (auto i = 0; i < numServos; ++i)
   {
@@ -833,9 +832,10 @@ void saveEeprom()
   eepromPutInc(addr, numServos);
   eepromPutInc(addr, PidServo::enabled);
   eepromPutInc(addr, PID::MaxIntegratorStore);
-  eepromPutInc(addr, AnalogPin::Range);
+  //eepromPutInc(addr, AnalogPin::Range);
   eepromPutInc(addr, ServoBase::MinAngle);
   eepromPutInc(addr, ServoBase::MaxAngle);
+  eepromPutInc(addr, Deadband::MaxDeviation);
 
   for (auto i = 0; i < numServos; ++i)
     eepromPutInc(addr, PidServos[i]);

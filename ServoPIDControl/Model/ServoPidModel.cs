@@ -17,8 +17,8 @@ namespace ServoPIDControl.Model
         private float _d;
         private float _dLambda = 1;
         private float _setPoint;
-        private float _inputScale = 1;
-        private float _inputBias;
+        private float _InputMin = 1;
+        private float _InputMax;
         private float _input;
         private float _output;
         private float _integrator;
@@ -104,24 +104,24 @@ namespace ServoPIDControl.Model
             }
         }
 
-        public float InputScale
+        public float InputMin
         {
-            get => _inputScale;
+            get => _InputMin;
             set
             {
-                if (value.Equals(_inputScale)) return;
-                _inputScale = value;
+                if (value.Equals(_InputMin)) return;
+                _InputMin = value;
                 OnPropertyChanged();
             }
         }
 
-        public float InputBias
+        public float InputMax
         {
-            get => _inputBias;
+            get => _InputMax;
             set
             {
-                if (value.Equals(_inputBias)) return;
-                _inputBias = value;
+                if (value.Equals(_InputMax)) return;
+                _InputMax = value;
                 OnPropertyChanged();
             }
         }

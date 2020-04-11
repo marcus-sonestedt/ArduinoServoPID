@@ -6,6 +6,8 @@
 
 constexpr const char* F(const char* x) { return x; }
 
+#include <cassert>
+
 // whatever
 #define OUTPUT 1
 #define INPUT 2
@@ -62,6 +64,15 @@ T constrain(const T v, const U min, const U max)
   if (v > T(max))
     return T(max);
   return v;
+}
+
+template<typename T, typename U>
+U map(const T v, const T fromMin, const T fromMax, const U toMin, const U toMax)
+{
+  assert(fromMax > fromMin);
+  assert(toMax > toMin);
+  float n = (v - fromMin) / U(fromMax - fromMin);
+  return n * (toMax - toMin) + toMin;
 }
 
 // Mock Servo
