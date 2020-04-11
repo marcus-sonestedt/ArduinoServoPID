@@ -57,7 +57,7 @@ public:
     _dValueFiltered = 0.0f;
   }
 
-  float regulate(float currentValue, float dt)
+  float regulate(float currentValue, float dt, float minValue, float maxValue)
   {
     constexpr auto offset = 90.0f;
 
@@ -67,8 +67,16 @@ public:
     _prevValue = currentValue;
     _dValueFiltered = (dValue * _dLambda) + (_dValueFiltered * (1.0f - _dLambda));
 
+    const auto outputEstimate = _pFactor * error + _iFactor * _integral - _dFactor * _dValueFiltered + offset;
+
     if (_iFactor != 0) {
-      _integral += error * dt;
+      // only integrate if we are within bounds
+      const auto i = error * dt;
+      if (i * _iFactor > 0 && outputEstimate < maxValue)
+        _integral += i;
+      else if (i * _iFactor < 0 && outputEstimate > minValue)
+        _integral += i;
+
       // limit "energy" storage in integrator
       _integral = constrain(_integral, -MaxIntegratorStore, MaxIntegratorStore);
     }
@@ -266,7 +274,7 @@ public:
     _input = _analogPin.read();
 
     if (enabled) {
-      _output = _pid.regulate(_input, dt);
+      _output = _pid.regulate(_input, dt, _servo.MinAngle, _servo.MaxAngle);
     } else  {
       _output = ServoBase::servoMidpointAngle();
     }
