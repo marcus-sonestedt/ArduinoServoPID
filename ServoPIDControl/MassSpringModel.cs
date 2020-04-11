@@ -4,7 +4,7 @@ namespace ServoPIDControl
 {
     internal class MassSpringModel
     {
-        private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+        // private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
         public double Acceleration { get; private set; }
         public double DamperConstant { get; set; } = 0.1;

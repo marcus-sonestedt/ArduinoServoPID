@@ -31,6 +31,7 @@ namespace ServoPIDControl
         LoadEeprom,
         SaveEeprom,
         ResetToDefault,
+        CalibrateAnalogInput
     }
 
     public enum ServoParam : byte

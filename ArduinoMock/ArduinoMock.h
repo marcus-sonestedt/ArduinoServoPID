@@ -19,7 +19,7 @@ MOCK_API extern std::vector<uint16_t> gAnalogPins;
 MOCK_API extern std::vector<uint8_t> gPwmPins;
 }
 
-inline void pinMode(int pin, int mode)
+inline void pinMode(int /* pin */ , int /* mode */)
 {
   // bah
 }
@@ -94,7 +94,7 @@ typedef MockServo Servo;
 class MockSerial
 {
 public:
-  void begin(int baudRate) const
+  void begin(int /* baudRate */ ) const
   {
   }
 
@@ -231,7 +231,7 @@ public:
   {
   }
 
-  void setClock(const int baudRate) const
+  void setClock(const int /* baudRate */) const
   {
   }
 };
@@ -267,7 +267,7 @@ public:
 
   uint8_t& operator[](int addr) { return _mem[addr]; }
 
-  constexpr unsigned int length() const { return static_cast<unsigned int>(_mem.size()); }
+  constexpr int length() const { return int(_mem.size()); }
 
   std::array<uint8_t, 4096> _mem{};
 };

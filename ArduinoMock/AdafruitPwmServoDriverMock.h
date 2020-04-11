@@ -29,12 +29,11 @@ public:
   explicit Adafruit_PWMServoDriver(uint8_t addr = 0x40, void* I2C = nullptr)
     : _pwmOn(16), _pwmOff(16), _i2c(I2C), _i2caddr(addr)
   {
-  }
-
-  ~Adafruit_PWMServoDriver() = default;
+  }  
 
   void begin(uint8_t prescale = 0)
   {
+    _prescale = prescale;
   }
 
   void reset()
@@ -51,6 +50,7 @@ public:
 
   void setExtClk(uint8_t prescale)
   {
+    _prescale = prescale;
   }
 
   void    setPWMFreq(float freq) { _freq = freq; }
@@ -69,6 +69,7 @@ public:
   std::vector<uint16_t> _pwmOn;
   std::vector<uint16_t> _pwmOff;
   float                 _freq = 60;
+  uint8_t               _prescale = 0;
   bool                  _outputMode = false;
 
 private:

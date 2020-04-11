@@ -18,7 +18,6 @@ namespace ServoPIDControl.Model
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
         private string _connectedPort;
-        private bool _pidEnabled = true;
         private float _deltaTime;
         private bool _connected;
         private bool _pollPidData;
@@ -37,6 +36,8 @@ namespace ServoPIDControl.Model
                 Servos.Add(new ServoPidModel(i));
 
             GlobalVar = GlobalVars.ToDictionary(gv => gv.Variable, gv => gv);
+            GlobalVar[ServoPIDControl.GlobalVar.PidEnabled].PropertyChanged +=
+                (s, a) => OnPropertyChanged(nameof(PidEnabled));
 
             _timer = new DispatcherTimer {Interval = TimeSpan.FromSeconds(1), IsEnabled = true};
             _timer.Tick += UpdateComPorts;
@@ -51,7 +52,6 @@ namespace ServoPIDControl.Model
                     .Append("Simulator")
                     .ToList()
             );
-
         }
 
         public string ConnectedPort
@@ -68,14 +68,9 @@ namespace ServoPIDControl.Model
 
         public bool PidEnabled
         {
-            get => _pidEnabled;
-            set
-            {
-                if (value == _pidEnabled) return;
-                _pidEnabled = value;
-                OnPropertyChanged();
-                Log.Info($"{nameof(PidEnabled)}: {value}");
-            }
+            // ReSharper disable once CompareOfFloatsByEqualityOperator
+            get => GlobalVar[ServoPIDControl.GlobalVar.PidEnabled].Value != 0;
+            set => GlobalVar[ServoPIDControl.GlobalVar.PidEnabled].Value = value ? 1 : 0;
         }
 
         public ObservableCollection<ServoPidModel> Servos { get; } = new ObservableCollection<ServoPidModel>();

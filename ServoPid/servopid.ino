@@ -151,6 +151,11 @@ public:
   static uint16_t MinAngleRange;
   static uint16_t MaxAngleRange;
 
+  static float servoMidpointAngle()
+  {
+    return (MaxAngle + MinAngle) / 2.0f;
+  };
+
   int angleToPwm(float angle)
   {
     const auto cAngle = constrain(angle, float(MinAngle), float(MaxAngle));
@@ -165,7 +170,7 @@ public:
   uint8_t  _pin = 0;
   uint16_t _pwmMin = 544;
   uint16_t _pwmMax = 2400;
-  Deadband _deadband;
+  Deadband _deadband = {};
 };
 
 uint16_t ServoBase::MinAngle = 80;
@@ -173,8 +178,6 @@ uint16_t ServoBase::MaxAngle = 100;
 
 uint16_t ServoBase::MinAngleRange = 0;
 uint16_t ServoBase::MaxAngleRange = 320;
-
-const float SERVO_RESET_VALUE = (ServoBase::MaxAngle + ServoBase::MinAngle) / 2.0f;
 
 
 #if USE_PCA9685 == 1
@@ -195,7 +198,7 @@ public:
 
   void reset()
   {
-    write(SERVO_RESET_VALUE); 
+    write(servoMidpointAngle()); 
   }
 
   // ReSharper disable once CppMemberFunctionMayBeConst
@@ -231,7 +234,7 @@ public:
     void reset()
     {
         Servo::attach(_pin, _pwmMin, _pwmMax);
-        write(SERVO_RESET_VALUE);
+        write(servoMidpointAngle());
     }
 
     uint8_t _pin = 0;
@@ -269,7 +272,7 @@ public:
     if (enabled) {
       _output = _pid.regulate(_input, dt);
     } else  {
-      _output = SERVO_RESET_VALUE;
+      _output = ServoBase::servoMidpointAngle();
     }
     _servo.write(_output);
   }
@@ -298,7 +301,7 @@ bool PidServo::enabled = false;
 ////////////////////////////////////////////////////////////////////
 
 constexpr int MAX_PID_SERVOS = 8;
-unsigned int  numServos = 1;
+int  numServos = 1;
 PidServo      PidServos[MAX_PID_SERVOS];
 
 float prevTime = 0;
@@ -346,7 +349,7 @@ void loop()
   prevTime = t;
 
   // blink LED
-  const auto freq = PidServos[0].enabled ? 5 : 1;
+  const auto freq = PidServo::enabled ? 5 : 1;
   const auto ledPwm = uint8_t((sinf(t * 3.14f * freq) + 1) * 127);
   analogWrite(13, ledPwm);
 
@@ -388,6 +391,7 @@ enum class Command : uint8_t
   LoadEeprom,
   SaveEeprom,
   ResetToDefault,
+  CalibrateAnalogInput
 };
 
 enum class ServoParam : uint8_t
@@ -420,6 +424,7 @@ void handleSerialCommand();
 bool loadEeprom();
 void saveEeprom();
 void resetToDefaultValues();
+void calibrateAnalogInputs();
 
 void mySerialEvent()
 {
@@ -529,15 +534,7 @@ void handleSerialCommand()
     break;
 
   case Command::EnableRegulator:
-    PidServo::enabled = serialBuf[1] != 0;
-    for (auto i = 0u; i < numServos; ++i) // NOLINT(modernize-loop-convert)
-    {
-      auto& servo = PidServos[i];
-      servo.reset();
-    }
-
-    Serial.println(PidServo::enabled ? F("PID Enabled") : F("PID Disabled"));
-    Serial.println(F("OK"));
+    Serial.println(F("ERR: Deprecated command: EnableRegulator"));
     break;
 
   case Command::GetNumServos:
@@ -547,7 +544,7 @@ void handleSerialCommand()
     break;
 
   case Command::GetServoParams:
-    for (auto i = 0u; i < numServos; ++i) // NOLINT(modernize-loop-convert)
+    for (auto i = 0; i < numServos; ++i) // NOLINT(modernize-loop-convert)
     {
       const auto& servo = PidServos[i];
 
@@ -568,7 +565,7 @@ void handleSerialCommand()
     break;
 
   case Command::GetServoData:
-    for (auto i = 0u; i < numServos; ++i)
+    for (auto i = 0; i < numServos; ++i)
     {
       // show only one servo if set
       if (serialBuf[2] != i && serialBuf[2] < numServos)
@@ -607,7 +604,7 @@ void handleSerialCommand()
         }
 
         numServos = int(value);
-        for (auto i = 0u; i < numServos; ++i)
+        for (auto i = 0; i < numServos; ++i)
         {
           PidServos[i] = PidServo();
           PidServos[i].reset();
@@ -616,7 +613,7 @@ void handleSerialCommand()
 
       case GlobalVar::PidEnabled:
         PidServo::enabled = value != 0;
-        for (auto i = 0u; i < numServos; ++i) // NOLINT(modernize-loop-convert)
+        for (auto i = 0; i < numServos; ++i) // NOLINT(modernize-loop-convert)
         {
           auto& servo = PidServos[i];
           servo.reset();
@@ -688,7 +685,12 @@ void handleSerialCommand()
     resetToDefaultValues();
     break;
 
-  default:
+  case Command::CalibrateAnalogInput:
+    calibrateAnalogInputs();
+    break;
+
+
+    default:
     Serial.print(F("ERR: Unknown command "));
     Serial.print(serialBuf[1]);
     Serial.print('\n');
@@ -771,7 +773,7 @@ void resetToDefaultValues()
   PidServos[2].setPoint(90);
   PidServos[3].setPoint(90);
 
-  for (auto i = 0u; i < numServos; ++i)
+  for (auto i = 0; i < numServos; ++i)
     PidServos[i].reset();
 
   PidServo::enabled = false;
@@ -814,7 +816,7 @@ bool loadEeprom()
   eepromGetInc(addr, ServoBase::MinAngle);
   eepromGetInc(addr, ServoBase::MaxAngle);
 
-  for (auto i = 0u; i < numServos; ++i)
+  for (auto i = 0; i < numServos; ++i)
   {
     eepromGetInc(addr, PidServos[i]);
     PidServos[i].reset();
@@ -835,7 +837,7 @@ void saveEeprom()
   eepromPutInc(addr, ServoBase::MinAngle);
   eepromPutInc(addr, ServoBase::MaxAngle);
 
-  for (auto i = 0u; i < numServos; ++i)
+  for (auto i = 0; i < numServos; ++i)
     eepromPutInc(addr, PidServos[i]);
 
   // clear remaining memory (write if not zero)
@@ -850,6 +852,42 @@ void saveEeprom()
   Serial.print(addr);
   Serial.print(F(" bytes. CRC: "));
   Serial.println(newCrc);
+}
+
+void setServosAndPrintInput(float angle)
+{
+  Serial.print(F("LOG: Moving servos to "));
+  Serial.println(angle);
+
+  for (auto i = 0; i < numServos; ++i)
+    PidServos[i]._servo.write(angle);
+
+  delay(500);
+
+  for (auto i = 0; i < numServos; ++i) {
+    Serial.print(F("Servo #"));
+    Serial.print(i);
+    Serial.print(F(" at "));
+    Serial.print(PidServos[i]._analogPin.read(), 3);
+    Serial.println(F(" degrees"));
+  }
+}
+
+void calibrateAnalogInputs()
+{
+  Serial.println(F("LOG: Performing calibration maneuver!"));
+
+  setServosAndPrintInput(ServoBase::MinAngle);
+  setServosAndPrintInput(ServoBase::MaxAngle);
+
+  for (auto i = 0; i < numServos; ++i) {
+    PidServos[i]._servo.write(ServoBase::servoMidpointAngle());
+    PidServos[i].reset();
+  }
+
+  delay(500);
+
+  Serial.println(F("LOG: Done!"));
 }
 
 #ifdef SERVOPID_TEST

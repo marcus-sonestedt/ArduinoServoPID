@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using InteractiveDataDisplay.WPF;
 using NLog;
@@ -215,6 +216,7 @@ namespace ServoPIDControl
             }
         }
 
+
         private void LoadButton_Click(object sender, RoutedEventArgs e)
         {
             _arduinoCom.SendCommand(Command.LoadEeprom);
@@ -228,6 +230,11 @@ namespace ServoPIDControl
         private void ResetButton_Click(object sender, RoutedEventArgs e)
         {
             _arduinoCom.SendCommand(Command.ResetToDefault);
+        }
+
+        private void CalibrateButton_Click(object sender, RoutedEventArgs e)
+        {
+            _arduinoCom.SendCommand(Command.CalibrateAnalogInput);
         }
 
         /// <inheritdoc />

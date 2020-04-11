@@ -130,13 +130,13 @@ namespace ServoPIDControl.Helper
 
         protected override void InitializeTarget()
         {
-			TargetRichTextBox = System.Windows.Application.Current.MainWindow.FindName(ControlName) as System.Windows.Controls.RichTextBox;
+			TargetRichTextBox = Application.Current.MainWindow.FindName(ControlName) as System.Windows.Controls.RichTextBox;
 
 	        if (TargetRichTextBox != null) return;
             //this.TargetForm = FormHelper.CreateForm(this.FormName, this.Width, this.Height, false, this.ShowMinimized, this.ToolWindow);
             //this.CreatedForm = true;
 
-            var openFormByName = System.Windows.Application.Current.Windows.Cast<Window>().FirstOrDefault(x => x.GetType().Name == FormName);
+            var openFormByName = Application.Current.Windows.Cast<Window>().FirstOrDefault(x => x.GetType().Name == FormName);
             if (openFormByName != null)
             {
                 TargetForm = openFormByName;
@@ -221,20 +221,20 @@ namespace ServoPIDControl.Helper
 
             var logMessage = Layout.Render(logEvent);
 
-	        if (System.Windows.Application.Current == null) return;
+	        if (Application.Current == null) return;
 
 	        try
 	        {
-				if (System.Windows.Application.Current.Dispatcher.CheckAccess() == false)
+				if (!Application.Current.Dispatcher.CheckAccess())
 				{
-					System.Windows.Application.Current.Dispatcher.Invoke(() => SendTheMessageToRichTextBox(logMessage, matchingRule));
+                    Application.Current.Dispatcher.Invoke(() => SendTheMessageToRichTextBox(logMessage, matchingRule));
 				}
 				else
 				{
 					SendTheMessageToRichTextBox(logMessage, matchingRule);
 				}
 	        }
-	        catch(Exception ex)
+            catch (Exception ex)
 	        {
 		        Debug.WriteLine(ex);
 	        }
