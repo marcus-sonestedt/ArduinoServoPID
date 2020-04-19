@@ -2,38 +2,47 @@
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"> 
   <Fragment> 
     <ComponentGroup Id="GeneratedDependencies" Directory="SERVOPIDCONTROL"> 
+      <Component Id="ArduinoMock"> 
+                    <File  Id="ArduinoMock" Name="ArduinoMock.dll" Source="C:\dev\ArduinoServoPID\ServoPIDControl\bin\Release\ArduinoMock.dll" Vital="yes" KeyPath="yes" DiskId="1"/> 
+      </Component> 
+      <Component Id="ArduinoMock_Win32"> 
+                    <File  Id="ArduinoMock_Win32" Name="ArduinoMock_Win32.dll" Source="C:\dev\ArduinoServoPID\ServoPIDControl\bin\Release\ArduinoMock_Win32.dll" Vital="yes" KeyPath="yes" DiskId="1"/> 
+      </Component> 
       <Component Id="Castle.Core"> 
-                    <File  Id="Castle.Core" Name="Castle.Core.dll" Source="C:\Users\marcu\source\repos\marcusl\ServoPID\ServoPIDControl\bin\Release\Castle.Core.dll" Vital="yes" KeyPath="yes" DiskId="1"/> 
+                    <File  Id="Castle.Core" Name="Castle.Core.dll" Source="C:\dev\ArduinoServoPID\ServoPIDControl\bin\Release\Castle.Core.dll" Vital="yes" KeyPath="yes" DiskId="1"/> 
       </Component> 
       <Component Id="ControlzEx"> 
-                    <File  Id="ControlzEx" Name="ControlzEx.dll" Source="C:\Users\marcu\source\repos\marcusl\ServoPID\ServoPIDControl\bin\Release\ControlzEx.dll" Vital="yes" KeyPath="yes" DiskId="1"/> 
+                    <File  Id="ControlzEx" Name="ControlzEx.dll" Source="C:\dev\ArduinoServoPID\ServoPIDControl\bin\Release\ControlzEx.dll" Vital="yes" KeyPath="yes" DiskId="1"/> 
+      </Component> 
+      <Component Id="JetBrains.Annotations"> 
+                    <File  Id="JetBrains.Annotations" Name="JetBrains.Annotations.dll" Source="C:\dev\ArduinoServoPID\ServoPIDControl\bin\Release\JetBrains.Annotations.dll" Vital="yes" KeyPath="yes" DiskId="1"/> 
       </Component> 
       <Component Id="MahApps.Metro"> 
-                    <File  Id="MahApps.Metro" Name="MahApps.Metro.dll" Source="C:\Users\marcu\source\repos\marcusl\ServoPID\ServoPIDControl\bin\Release\MahApps.Metro.dll" Vital="yes" KeyPath="yes" DiskId="1"/> 
+                    <File  Id="MahApps.Metro" Name="MahApps.Metro.dll" Source="C:\dev\ArduinoServoPID\ServoPIDControl\bin\Release\MahApps.Metro.dll" Vital="yes" KeyPath="yes" DiskId="1"/> 
       </Component> 
       <Component Id="Microsoft.Maps.MapControl.WPF"> 
-                    <File  Id="Microsoft.Maps.MapControl.WPF" Name="Microsoft.Maps.MapControl.WPF.dll" Source="C:\Users\marcu\source\repos\marcusl\ServoPID\ServoPIDControl\bin\Release\Microsoft.Maps.MapControl.WPF.dll" Vital="yes" KeyPath="yes" DiskId="1"/> 
+                    <File  Id="Microsoft.Maps.MapControl.WPF" Name="Microsoft.Maps.MapControl.WPF.dll" Source="C:\dev\ArduinoServoPID\ServoPIDControl\bin\Release\Microsoft.Maps.MapControl.WPF.dll" Vital="yes" KeyPath="yes" DiskId="1"/> 
       </Component> 
       <Component Id="Moq"> 
-                    <File  Id="Moq" Name="Moq.dll" Source="C:\Users\marcu\source\repos\marcusl\ServoPID\ServoPIDControl\bin\Release\Moq.dll" Vital="yes" KeyPath="yes" DiskId="1"/> 
+                    <File  Id="Moq" Name="Moq.dll" Source="C:\dev\ArduinoServoPID\ServoPIDControl\bin\Release\Moq.dll" Vital="yes" KeyPath="yes" DiskId="1"/> 
       </Component> 
       <Component Id="mpolewaczyk.InteractiveDataDisplay.WPF"> 
-                    <File  Id="mpolewaczyk.InteractiveDataDisplay.WPF" Name="mpolewaczyk.InteractiveDataDisplay.WPF.dll" Source="C:\Users\marcu\source\repos\marcusl\ServoPID\ServoPIDControl\bin\Release\mpolewaczyk.InteractiveDataDisplay.WPF.dll" Vital="yes" KeyPath="yes" DiskId="1"/> 
+                    <File  Id="mpolewaczyk.InteractiveDataDisplay.WPF" Name="mpolewaczyk.InteractiveDataDisplay.WPF.dll" Source="C:\dev\ArduinoServoPID\ServoPIDControl\bin\Release\mpolewaczyk.InteractiveDataDisplay.WPF.dll" Vital="yes" KeyPath="yes" DiskId="1"/> 
       </Component> 
       <Component Id="NLog"> 
-                    <File  Id="NLog" Name="NLog.dll" Source="C:\Users\marcu\source\repos\marcusl\ServoPID\ServoPIDControl\bin\Release\NLog.dll" Vital="yes" KeyPath="yes" DiskId="1"/> 
+                    <File  Id="NLog" Name="NLog.dll" Source="C:\dev\ArduinoServoPID\ServoPIDControl\bin\Release\NLog.dll" Vital="yes" KeyPath="yes" DiskId="1"/> 
       </Component> 
       <Component Id="System.Reactive"> 
-                    <File  Id="System.Reactive" Name="System.Reactive.dll" Source="C:\Users\marcu\source\repos\marcusl\ServoPID\ServoPIDControl\bin\Release\System.Reactive.dll" Vital="yes" KeyPath="yes" DiskId="1"/> 
+                    <File  Id="System.Reactive" Name="System.Reactive.dll" Source="C:\dev\ArduinoServoPID\ServoPIDControl\bin\Release\System.Reactive.dll" Vital="yes" KeyPath="yes" DiskId="1"/> 
       </Component> 
       <Component Id="System.Runtime.CompilerServices.Unsafe"> 
-                    <File  Id="System.Runtime.CompilerServices.Unsafe" Name="System.Runtime.CompilerServices.Unsafe.dll" Source="C:\Users\marcu\source\repos\marcusl\ServoPID\ServoPIDControl\bin\Release\System.Runtime.CompilerServices.Unsafe.dll" Vital="yes" KeyPath="yes" DiskId="1"/> 
+                    <File  Id="System.Runtime.CompilerServices.Unsafe" Name="System.Runtime.CompilerServices.Unsafe.dll" Source="C:\dev\ArduinoServoPID\ServoPIDControl\bin\Release\System.Runtime.CompilerServices.Unsafe.dll" Vital="yes" KeyPath="yes" DiskId="1"/> 
       </Component> 
       <Component Id="System.Threading.Tasks.Extensions"> 
-                    <File  Id="System.Threading.Tasks.Extensions" Name="System.Threading.Tasks.Extensions.dll" Source="C:\Users\marcu\source\repos\marcusl\ServoPID\ServoPIDControl\bin\Release\System.Threading.Tasks.Extensions.dll" Vital="yes" KeyPath="yes" DiskId="1"/> 
+                    <File  Id="System.Threading.Tasks.Extensions" Name="System.Threading.Tasks.Extensions.dll" Source="C:\dev\ArduinoServoPID\ServoPIDControl\bin\Release\System.Threading.Tasks.Extensions.dll" Vital="yes" KeyPath="yes" DiskId="1"/> 
       </Component> 
       <Component Id="System.Windows.Interactivity"> 
-                    <File  Id="System.Windows.Interactivity" Name="System.Windows.Interactivity.dll" Source="C:\Users\marcu\source\repos\marcusl\ServoPID\ServoPIDControl\bin\Release\System.Windows.Interactivity.dll" Vital="yes" KeyPath="yes" DiskId="1"/> 
+                    <File  Id="System.Windows.Interactivity" Name="System.Windows.Interactivity.dll" Source="C:\dev\ArduinoServoPID\ServoPIDControl\bin\Release\System.Windows.Interactivity.dll" Vital="yes" KeyPath="yes" DiskId="1"/> 
       </Component> 
     </ComponentGroup> 
   </Fragment> 

@@ -72,7 +72,7 @@ U map(const T v, const T fromMin, const T fromMax, const U toMin, const U toMax)
   assert(fromMax > fromMin);
   assert(toMax > toMin);
   float n = (v - fromMin) / U(fromMax - fromMin);
-  return n * (toMax - toMin) + toMin;
+  return U(n * (toMax - toMin) + toMin);
 }
 
 // Mock Servo

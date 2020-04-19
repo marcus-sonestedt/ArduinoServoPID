@@ -57,7 +57,7 @@ public:
     _dValueFiltered = 0.0f;
   }
 
-  float regulate(float currentValue, float dt, float minValue, float maxValue)
+  float regulate(float currentValue, float dt, float minValue = -180, float maxValue = 180)
   {
     constexpr auto offset = 90.0f;
 
@@ -193,7 +193,7 @@ class PCA9685Servo : public ServoBase
 public:
   PCA9685Servo() = default;
 
-  void attach(const int pin, const int pwmMin, const int pwmMax)
+  void attach(const uint8_t pin, const uint16_t pwmMin, const uint16_t pwmMax)
   {
     _pin = pin;
     _pwmMin = pwmMin;

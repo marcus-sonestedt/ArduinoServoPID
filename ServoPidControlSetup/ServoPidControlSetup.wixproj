@@ -32,14 +32,6 @@
       <RefProjectOutputGroups>Binaries;Symbols;Sources;Content</RefProjectOutputGroups>
       <RefTargetDir>SERVOPIDCONTROL</RefTargetDir>
     </ProjectReference>
-    <ProjectReference Include="..\ServoPid\ServoPid.vcxproj">
-      <Name>ServoPid</Name>
-      <Project>{1fd10ce4-f14c-4475-ae3c-e64a7e7ff78b}</Project>
-      <Private>True</Private>
-      <DoNotHarvest>True</DoNotHarvest>
-      <RefProjectOutputGroups>Sources</RefProjectOutputGroups>
-      <RefTargetDir>INSTALLFOLDER</RefTargetDir>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <WixExtension Include="WixUIExtension">
