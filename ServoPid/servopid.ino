@@ -1,4 +1,4 @@
-#define USE_PCA9685 0 // set 0 to use Arduino to directly control servos
+#define USE_PCA9685 1 // set 0 to use Arduino to directly control servos
 
 #ifdef ARDUINO
 #include <EEPROM.h> 
@@ -320,9 +320,6 @@ void setup()
   crcAddress = EEPROM.length() - sizeof(unsigned long);
 
 #if USE_PCA9685
-  //Wire.begin();                       // Wire must be started first
-  //Wire.setClock(400000);              // Supported baud rates are 100kHz, 400kHz, and 1000kHz
-
   gPwmController.begin();
   gPwmController.setPWMFreq(200);
 #endif
@@ -736,57 +733,6 @@ void initServosFromEeprom()
   saveEeprom();
 }
 
-void resetToDefaultValues()
-{
-  Serial.println(F("LOG: Resetting PIDs to default values"));
-
-  numServos = 1;
-
-  const auto pK = 0.00f;
-  const auto iK = 0.00f;
-  const auto dK = 0.00f;
-  const auto dL = 0.1f;
-
-  PidServos[0] = PidServo(
-    9, 544, 2400, // servo pin, pwm min, pwm max
-    PID(pK, iK, dK, dL),
-    AnalogPin(0, 0, 320) // potentiometer pin, in min, in max
-  );
-  PidServos[1] = PidServo(
-    1, 544, 2400, // servo pin, pwm min, pwm max
-    PID(pK, iK, dK, dL),
-    AnalogPin(1, 0, 320) // potentiometer pin, in min, in max
-  );
-  PidServos[2] = PidServo(
-    2, 544, 2400, // servo pin, pwm min, pwm max
-    PID(pK, iK, dK, dL),
-    AnalogPin(2, 0, 320) // potentiometer pin, in min, in max
-  );
-  PidServos[3] = PidServo(
-    3, 544, 2400, // servo pin, pwm min, pwm max
-    PID(pK, iK, dK, dL),
-    AnalogPin(3, 0, 320) // potentiometer pin, in min, in max
-  );
-
-  pinMode(2, OUTPUT);
-
-  // setPoint => where we want servo to be ([80..100])
-  PidServos[0].setPoint(ServoBase::servoMidpointAngle());
-  PidServos[1].setPoint(ServoBase::servoMidpointAngle());
-  PidServos[2].setPoint(ServoBase::servoMidpointAngle());
-  PidServos[3].setPoint(ServoBase::servoMidpointAngle());
-
-  for (auto i = 0; i < numServos; ++i)
-    PidServos[i].reset();
-
-  PidServo::enabled = false;
-  PID::MaxIntegratorStore = 5000;
-  //AnalogPin::Range = 320;
-  ServoBase::MinAngle = 70;
-  ServoBase::MaxAngle = 110;
-  Deadband::MaxDeviation = 5;
-}
-
 template <typename T>
 void eepromPutInc(int& addr, const T value)
 {
@@ -906,6 +852,67 @@ void calibrateAnalogInputs()
   delay(500);
 
   Serial.println(F("LOG: Done!"));
+}
+
+
+void resetToDefaultValues()
+{
+  Serial.println(F("LOG: Resetting PIDs to default values"));
+
+  numServos = 4;
+
+  const auto pK = 0.00f;
+  const auto iK = 0.00f;
+  const auto dK = 0.00f;
+  const auto dL = 0.1f;
+
+  PidServos[0] = PidServo(
+    0, 544, 2400, // servo pin, pwm min, pwm max
+    PID(pK, iK, dK, dL),
+    AnalogPin(0, 0, 320) // potentiometer pin, in min, in max
+  );
+  PidServos[1] = PidServo(
+    1, 544, 2400, // servo pin, pwm min, pwm max
+    PID(pK, iK, dK, dL),
+    AnalogPin(1, 0, 320) // potentiometer pin, in min, in max
+  );
+  PidServos[2] = PidServo(
+    2, 544, 2400, // servo pin, pwm min, pwm max
+    PID(pK, iK, dK, dL),
+    AnalogPin(2, 0, 320) // potentiometer pin, in min, in max
+  );
+  PidServos[3] = PidServo(
+    3, 544, 2400, // servo pin, pwm min, pwm max
+    PID(pK, iK, dK, dL),
+    AnalogPin(3, 0, 320) // potentiometer pin, in min, in max
+  );
+
+#if USE_PCA9685 == 0
+  // Only used when running raw Arduino pwm output, no PCA9685
+  // Be sure to match pins above, and use pwm capable pins only!
+  pinMode(3, OUTPUT);
+  pinMode(4, OUTPUT);
+  pinMode(5, OUTPUT);
+  pinMode(6, OUTPUT);
+#endif
+
+  // setPoint => where we want servo to be ([80..100])
+  const auto midpoint = ServoBase::servoMidpointAngle();
+
+  PidServos[0].setPoint(midpoint);
+  PidServos[1].setPoint(midpoint);
+  PidServos[2].setPoint(midpoint);
+  PidServos[3].setPoint(midpoint);
+
+  for (auto i = 0; i < numServos; ++i)
+    PidServos[i].reset();
+
+  PidServo::enabled = false;
+  PID::MaxIntegratorStore = 5000;
+  //AnalogPin::Range = 320;
+  ServoBase::MinAngle = 70;
+  ServoBase::MaxAngle = 110;
+  Deadband::MaxDeviation = 5;
 }
 
 #ifdef SERVOPID_TEST
