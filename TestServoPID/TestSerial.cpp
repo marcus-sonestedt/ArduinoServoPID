@@ -49,21 +49,24 @@ TEST_F(SerialTest, CheckGetNumServos)
   mySerialEvent();
   EXPECT_EQ(serialLen, 0);
 
-  EXPECT_EQ("NS 4", GetSerialLine());
+  EXPECT_EQ("NS 1", GetSerialLine());
   EXPECT_EQ(GetSerialLine().length(), 0);
 }
 
 
 TEST_F(SerialTest, CheckGetNumServosTwice)
 {
-  const std::vector<char> data{2, char(Command::GetNumServos), 2, char(Command::GetNumServos)};
+  const std::vector<char> data {
+    2, char(Command::GetNumServos), 
+    2, char(Command::GetNumServos)
+  };
 
   Serial.setMockData(data);
   mySerialEvent();
   EXPECT_EQ(serialLen, 0);
 
-  EXPECT_EQ("NS 4", GetSerialLine());
-  EXPECT_EQ("NS 4", GetSerialLine());
+  EXPECT_EQ("NS 1", GetSerialLine());
+  EXPECT_EQ("NS 1", GetSerialLine());
   EXPECT_EQ(GetSerialLine(), "");
 }
 

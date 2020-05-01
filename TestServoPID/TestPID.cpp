@@ -11,7 +11,7 @@ TEST(TestPID, StaysOnZero)
   for (auto i = 0; i < 10; ++i)
   {
     const auto output = pid.regulate(input, 1.0f);
-    ASSERT_FLOAT_EQ(output, 0.0f);
+    ASSERT_FLOAT_EQ(output, 90.0f);
   }
 }
 
@@ -22,7 +22,7 @@ TEST(TestPID, NoStartFlutter)
   pid.setPoint(input);
   pid.reset(input);
   const auto output = pid.regulate(input, 1.0f);
-  ASSERT_FLOAT_EQ(output, 0.0f);
+  ASSERT_FLOAT_EQ(output, 90.0f);
 }
 
 TEST(TestPID, NoDeltaRelatedSpikeOnSetPosChange)

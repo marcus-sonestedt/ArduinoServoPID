@@ -26,7 +26,7 @@ TEST(TestEEPROM, TestSaveComputesCrc)
     numServos = 0;
     saveEeprom();
 
-    unsigned int storedCrc;
+    uint32_t storedCrc;
     const auto dataEndAddr = EEPROM.length() - sizeof(storedCrc);
     EEPROM.get(dataEndAddr, storedCrc);
     EXPECT_NE(storedCrc, 0xFFFFFFFFu);
@@ -42,6 +42,7 @@ TEST(TestEEPROM, TestDefaultInit)
 
     EEPROM._mem.fill(0xFF);
     initServosFromEeprom(); // should init with default values
+    ASSERT_GE(numServos, 0);
 
     std::vector<PidServo> currentServos(numServos);
     std::copy(std::begin(PidServos), std::begin(PidServos) + numServos, std::begin(currentServos));
@@ -62,14 +63,17 @@ TEST(TestEEPROM, TestLoadAfterSave)
     EEPROM._mem.fill(0xFF);
     initServosFromEeprom();
     saveEeprom(); // should be done by above
-    const std::vector<PidServo> defaultServos(std::begin(PidServos), std::begin(PidServos) + numServos);
+    const std::vector<PidServo> defaultServos(&PidServos[0], &PidServos[1]);
 
     // corrupt current data
     numServos = 42;
     std::fill(std::begin(PidServos), std::end(PidServos), PidServo());
 
+
     loadEeprom();
-    const std::vector<PidServo> currentServos(std::begin(PidServos), std::begin(PidServos) + numServos);
+    ASSERT_EQ(numServos, 1);
+      
+    const std::vector<PidServo> currentServos(&PidServos[0], PidServos + numServos);
     
     ASSERT_THAT(currentServos, testing::ElementsAreArray(defaultServos));
 }

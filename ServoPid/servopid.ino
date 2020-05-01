@@ -305,8 +305,8 @@ bool PidServo::enabled = false;
 ////////////////////////////////////////////////////////////////////
 
 constexpr int MAX_PID_SERVOS = 8;
-int  numServos = 1;
-PidServo      PidServos[MAX_PID_SERVOS];
+int numServos = 1;
+PidServo PidServos[MAX_PID_SERVOS];
 
 float prevTime = 0;
 float dt = 0;
@@ -700,16 +700,16 @@ void handleSerialCommand()
   }
 }
 
-constexpr unsigned long crc_table[16] = {
+constexpr uint32_t crc_table[16] = {
    0x00000000, 0x1db71064, 0x3b6e20c8, 0x26d930ac,
    0x76dc4190, 0x6b6b51f4, 0x4db26158, 0x5005713c,
    0xedb88320, 0xf00f9344, 0xd6d6a3e8, 0xcb61b38c,
    0x9b64c2b0, 0x86d3d2d4, 0xa00ae278, 0xbdbdf21c
 };
 
-unsigned long calcEepromCrc(int start, int end)
+uint32_t calcEepromCrc(int start, int end)
 { 
-  unsigned long crc = 0;
+  uint32_t crc = 0;
   crc = ~crc;
 
   for (auto index = start; index < end; ++index)
