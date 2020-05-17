@@ -12,8 +12,8 @@ namespace
     std::ostream& operator<<(std::ostream& os, const PidServo &s)
     {
         return os 
-            << "Servo pin: " << s._servo._pin << " pwm min: " << s._servo._pwmMin << " pwm max: " <<s._servo._pwmMax << std::endl
-            << "Pot pin: " << s._analogPin._pin << " min: " << s._analogPin._min << " max " << s._analogPin._max << std::endl
+            << "Servo pin: " << int(s._servo._pin) << " pwm min: " << s._servo._pwmMin << " pwm max: " <<s._servo._pwmMax << std::endl
+            << "Pot pin: " << int(s._analogPin._pin) << " min: " << s._analogPin._min << " max " << s._analogPin._max << std::endl
             << "P: " << s._pid._pFactor << " I: " << s._pid._iFactor << " D: " << s._pid._dFactor << " DL: " << s._pid._dLambda  << std::endl
             << "Integral: " << s._pid._integral << " PV: " << s._pid._prevValue << " DF: " << s._pid._dValueFiltered << std::endl
             << "Input: " << s._input << " Output: " << s._output << std::endl;
@@ -62,16 +62,14 @@ TEST(TestEEPROM, TestLoadAfterSave)
 {
     EEPROM._mem.fill(0xFF);
     initServosFromEeprom();
-    saveEeprom(); // should be done by above
-    const std::vector<PidServo> defaultServos(&PidServos[0], &PidServos[1]);
+    const std::vector<PidServo> defaultServos(&PidServos[0], &PidServos[numServos]);
 
     // corrupt current data
     numServos = 42;
     std::fill(std::begin(PidServos), std::end(PidServos), PidServo());
 
-
     loadEeprom();
-    ASSERT_EQ(numServos, 1);
+    ASSERT_EQ(numServos, 4);
       
     const std::vector<PidServo> currentServos(&PidServos[0], PidServos + numServos);
     

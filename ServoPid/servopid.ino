@@ -313,12 +313,12 @@ float dt = 0;
 
 void initServosFromEeprom();
 
-int crcAddress;
+int crcAddress() {
+  return  EEPROM.length() - sizeof(uint32_t);
+};
 
 void setup()
 {
-  crcAddress = EEPROM.length() - sizeof(unsigned long);
-
 #if USE_PCA9685
   gPwmController.begin();
   gPwmController.setPWMFreq(200);
@@ -752,10 +752,10 @@ bool loadEeprom()
 {
   Serial.println(F("LOG: Loading settings from EEPROM"));
 
-  unsigned long storedCrc;
-  EEPROM.get(crcAddress, storedCrc);
+  uint32_t storedCrc;
+  EEPROM.get(crcAddress(), storedCrc);
 
-  const auto computedCrc = calcEepromCrc(0, crcAddress);
+  const auto computedCrc = calcEepromCrc(0, crcAddress());
 
   if (computedCrc != storedCrc) {
     Serial.print(F("ERR: CRC mismatch, stored: "));
@@ -805,12 +805,13 @@ void saveEeprom()
     eepromPutInc(addr, PidServos[i]);
 
   // clear remaining memory (write if not zero)
-  while (addr < crcAddress)
+  const auto crcA = crcAddress();
+  while (addr < crcA)
     EEPROM.update(addr++, 0);
 
   // calc and store crc
-  const auto newCrc = calcEepromCrc(0, crcAddress);
-  EEPROM.put(crcAddress, newCrc);
+  const auto newCrc = calcEepromCrc(0, crcA);
+  EEPROM.put(crcA, newCrc);
 
   Serial.print(F("LOG: Wrote "));
   Serial.print(addr);
