@@ -16,7 +16,7 @@ namespace
             << "Pot pin: " << int(s._analogPin._pin) << " min: " << s._analogPin._min << " max " << s._analogPin._max << std::endl
             << "P: " << s._pid._pFactor << " I: " << s._pid._iFactor << " D: " << s._pid._dFactor << " DL: " << s._pid._dLambda  << std::endl
             << "Integral: " << s._pid._integral << " PV: " << s._pid._prevValue << " DF: " << s._pid._dValueFiltered << std::endl
-            << "Input: " << s._input << " Output: " << s._output << std::endl;
+            << "SetPoint: " << s._pid._setPoint << " Input: " << s._input << " Output: " << s._output << std::endl;
     }
 }
 
@@ -60,18 +60,53 @@ TEST(TestEEPROM, TestInitSaves)
 
 TEST(TestEEPROM, TestLoadAfterSave)
 {
+    setMockAnalogRead(0, 0);
+    setMockAnalogRead(1, 0); 
+    setMockAnalogRead(2, 0); 
+    setMockAnalogRead(3, 0); 
+
     EEPROM._mem.fill(0xFF);
     initServosFromEeprom();
-    const std::vector<PidServo> defaultServos(&PidServos[0], &PidServos[numServos]);
+
+    // change default values
+    PID::MaxIntegratorStore = 420;
+    ServoBase::MinAngle = 3;
+    ServoBase::MaxAngle = 93;
+    Deadband::MaxDeviation = 9;
+
+    numServos = 4;
+    PidServos[0]._analogPin._pin = 7;
+    PidServos[1]._pid._pFactor = 2;
+    PidServos[2]._pid._iFactor = 3;
+    PidServos[3]._pid._dFactor = 4;
+
+    // run one step
+    for (auto& ps : PidServos)
+      ps.run(0.5f);
+
+    // save
+    saveEeprom();
+    const auto savedServos = std::vector(&PidServos[0], &PidServos[numServos]);
 
     // corrupt current data
     numServos = 42;
+    PID::MaxIntegratorStore = 666;
+    ServoBase::MinAngle = -1;
+    ServoBase::MaxAngle = -2;
+    Deadband::MaxDeviation = -3;
     std::fill(std::begin(PidServos), std::end(PidServos), PidServo());
+    const auto corruptServos = std::vector(&PidServos[0], &PidServos[4]);
+    ASSERT_THAT(corruptServos, testing::Not(testing::ElementsAreArray(savedServos)));
 
+    // load back, check size
     loadEeprom();
-    ASSERT_EQ(numServos, 4);
-      
-    const std::vector<PidServo> currentServos(&PidServos[0], PidServos + numServos);
+
+    ASSERT_EQ(numServos, savedServos.size());
+    ASSERT_EQ(PID::MaxIntegratorStore, 420);
+    ASSERT_EQ(ServoBase::MinAngle, 3);
+    ASSERT_EQ(ServoBase::MaxAngle, 93);
+    ASSERT_EQ(Deadband::MaxDeviation, 9);
     
-    ASSERT_THAT(currentServos, testing::ElementsAreArray(defaultServos));
+    const auto currentServos = std::vector<PidServo> (&PidServos[0], PidServos + numServos);  
+    ASSERT_THAT(currentServos, testing::ElementsAreArray(savedServos));
 }

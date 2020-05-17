@@ -113,19 +113,12 @@ TEST(TestPID, RegulateMassSpringBounce)
 }
 
 
-TEST(TestPID, ResetPreloadsIntegrator)
+TEST(TestPID, SetPointPreloadsIntegrator)
 {
-  auto pid = PID(0.0f, 1.0f, 0.0f, 0.2f);
   PID::MaxIntegratorStore = 5000;
-  
+
+  auto pid = PID(0.0f, 2.0f, 0.0f, 0.2f);
   const auto input = 20.0f;
   pid.setPoint(42.0f);
-  pid.reset(input);
-
-  std::cout << "Integrator: " << pid._integral << std::endl;
-
-  const auto output1 = pid.regulate(input, 0.50f);
-  const auto output2 = pid.regulate(input, 0.50f);
-
-  ASSERT_NEAR(output1, output2, 1);
+  ASSERT_NEAR(pid._integral * 2, pid._setPoint, 0.1);
 }

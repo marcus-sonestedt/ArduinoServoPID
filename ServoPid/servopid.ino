@@ -43,12 +43,7 @@ public:
   {
     const auto error = _setPoint - currentValue;
 
-    _integral = 0.0f;
-
-    if (_iFactor != 0)
-      _integral = error / _iFactor;
-    else
-      _integral = 0.0f;
+    _integral = error * _iFactor;
 
     if (_pFactor != 0)
       _integral -= error / _pFactor;
@@ -86,8 +81,8 @@ public:
 
   void setPoint(float setPoint)
   {
-    _integral = 0.0f;
     _setPoint = setPoint;
+    reset(_prevValue);
   }
 
   float _setPoint = 0;
@@ -198,6 +193,7 @@ public:
     _pin = pin;
     _pwmMin = pwmMin;
     _pwmMax = pwmMax;
+    pinMode(_pin, OUTPUT);
   }
 
   void reset()
@@ -779,8 +775,7 @@ bool loadEeprom()
   Serial.print(numServos);
   Serial.println(F(" servo(s)."));
 
-  for (auto i = 0; i < numServos; ++i)
-  {
+  for (auto i = 0; i < numServos; ++i) {
     eepromGetInc(addr, PidServos[i]);
     PidServos[i].reset();
   }
@@ -801,8 +796,11 @@ void saveEeprom()
   eepromPutInc(addr, ServoBase::MaxAngle);
   eepromPutInc(addr, Deadband::MaxDeviation);
 
-  for (auto i = 0; i < numServos; ++i)
-    eepromPutInc(addr, PidServos[i]);
+  for (auto i = 0; i < numServos; ++i) {
+    auto saveData = PidServos[i];
+    saveData.reset();
+    eepromPutInc(addr, saveData);
+  }
 
   // clear remaining memory (write if not zero)
   const auto crcA = crcAddress();
@@ -887,15 +885,6 @@ void resetToDefaultValues()
     PID(pK, iK, dK, dL),
     AnalogPin(3, 0, 320) // potentiometer pin, in min, in max
   );
-
-#if USE_PCA9685 == 0
-  // Only used when running raw Arduino pwm output, no PCA9685
-  // Be sure to match pins above, and use pwm capable pins only!
-  pinMode(3, OUTPUT);
-  pinMode(4, OUTPUT);
-  pinMode(5, OUTPUT);
-  pinMode(6, OUTPUT);
-#endif
 
   // setPoint => where we want servo to be ([80..100])
   const auto midpoint = ServoBase::servoMidpointAngle();
