@@ -220,6 +220,7 @@ namespace ServoPIDControl
         private void LoadButton_Click(object sender, RoutedEventArgs e)
         {
             _arduinoCom.SendCommand(Command.LoadEeprom);
+            _arduinoCom.RetrieveAllData();
         }
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)

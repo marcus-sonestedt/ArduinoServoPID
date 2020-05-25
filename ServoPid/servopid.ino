@@ -755,7 +755,7 @@ bool loadEeprom()
 
   if (computedCrc != storedCrc) {
     Serial.print(F("ERR: CRC mismatch, stored: "));
-    Serial.print(storedCrc);
+    Serial.print(computedCrc);
     Serial.print(F(" vs computed: "));
     Serial.print(storedCrc);
     Serial.println(' ');
@@ -771,7 +771,9 @@ bool loadEeprom()
   eepromGetInc(addr, ServoBase::MaxAngle);
   eepromGetInc(addr, Deadband::MaxDeviation);
 
-  Serial.print(F("LOG: CRC match. Initializing "));
+  Serial.print(F("LOG: CRC match: "));
+  Serial.print(storedCrc);
+  Serial.print(F(". Initializing "));
   Serial.print(numServos);
   Serial.println(F(" servo(s)."));
 
@@ -802,14 +804,14 @@ void saveEeprom()
     eepromPutInc(addr, saveData);
   }
 
-  // clear remaining memory (write if not zero)
-  const auto crcA = crcAddress();
-  while (addr < crcA)
+  // clear remaining memory (update -> write if not already zero)
+  const auto crcAddr = crcAddress();
+  while (addr < crcAddr)
     EEPROM.update(addr++, 0);
 
   // calc and store crc
-  const auto newCrc = calcEepromCrc(0, crcA);
-  EEPROM.put(crcA, newCrc);
+  const auto newCrc = calcEepromCrc(0, crcAddr);
+  EEPROM.put(crcAddr, newCrc);
 
   Serial.print(F("LOG: Wrote "));
   Serial.print(addr);

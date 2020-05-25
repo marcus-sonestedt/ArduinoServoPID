@@ -52,7 +52,7 @@ namespace ServoPIDControl
         NumServos,
         PidEnabled,
         PidMaxIntegratorStore,
-        AnalogInputRange,
+        AnalogInputRange,  // not used
         ServoMinAngle,
         ServoMaxAngle,
         DeadbandMaxDeviation
@@ -74,6 +74,8 @@ namespace ServoPIDControl
         private readonly DispatcherTimer _timer = new DispatcherTimer {Interval = TimeSpan.FromMilliseconds(50)};
         private readonly object _portLock = new object();
         private bool _updatingGlobalVarsFromArduino;
+        private float _setTime;
+        private volatile bool _gettingServoData;
 
         public ArduinoCom()
         {
@@ -171,6 +173,8 @@ namespace ServoPIDControl
                 var parts = line.Split(' ');
                 try
                 {
+                    _gettingServoData = true;
+
                     var servoId = int.Parse(parts[1], InvariantCulture);
                     var servo = Model.Servos[servoId];
                     servo.P = float.Parse(parts[2], InvariantCulture);
@@ -186,6 +190,10 @@ namespace ServoPIDControl
                 {
                     Log.Error($"Bad servo data: {line} - {e.Message}");
                 }
+                finally
+                {
+                    _gettingServoData = false;
+                }
 
                 return;
             }
@@ -195,6 +203,8 @@ namespace ServoPIDControl
                 var parts = line.Split(' ');
                 try
                 {
+                    _gettingServoData = true;
+
                     var servoId = int.Parse(parts[1], InvariantCulture);
                     var servo = Model.Servos[servoId];
                     servo.Input = float.Parse(parts[2], InvariantCulture);
@@ -212,6 +222,10 @@ namespace ServoPIDControl
                 {
                     Log.Error($"Invalid servo index: {line} - {e.Message}");
                 }
+                finally
+                {
+                    _gettingServoData = false;  
+                }
 
                 return;
             }
@@ -226,10 +240,9 @@ namespace ServoPIDControl
                     Model.GlobalVar[NumServos].Value = int.Parse(parts[1], InvariantCulture);
                     Model.GlobalVar[PidEnabled].Value = int.Parse(parts[2], InvariantCulture);
                     Model.GlobalVar[PidMaxIntegratorStore].Value = float.Parse(parts[3], InvariantCulture);
-                    Model.GlobalVar[AnalogInputRange].Value = float.Parse(parts[4], InvariantCulture);
-                    Model.GlobalVar[ServoMinAngle].Value = float.Parse(parts[5], InvariantCulture);
-                    Model.GlobalVar[ServoMaxAngle].Value = float.Parse(parts[6], InvariantCulture);
-                    Model.GlobalVar[DeadbandMaxDeviation].Value = float.Parse(parts[7], InvariantCulture);
+                    Model.GlobalVar[ServoMinAngle].Value = float.Parse(parts[4], InvariantCulture);
+                    Model.GlobalVar[ServoMaxAngle].Value = float.Parse(parts[5], InvariantCulture);
+                    Model.GlobalVar[DeadbandMaxDeviation].Value = float.Parse(parts[6], InvariantCulture);
                 }
                 catch (FormatException e)
                 {
@@ -324,6 +337,9 @@ namespace ServoPIDControl
 
         private void ServoOnPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
+            if (_gettingServoData)
+                return;
+
             var servo = (ServoPidModel) sender;
 
             switch (e.PropertyName)
@@ -475,8 +491,7 @@ namespace ServoPIDControl
                 }
             }
 
-            SendCommand(GetNumServos);
-            SendCommand(GetGlobalVars);
+            RetrieveAllData();
 
             //SendCommand(Command.EnableRegulator, (byte) (Model.Enabled ? 1 : 0));
         }
@@ -488,12 +503,16 @@ namespace ServoPIDControl
             Model = null;
         }
 
-        private float _setTime;
-
         public float SetTime
         {
             get => float.IsNaN(_setTime) ? (float)_stopWatch.Elapsed.TotalSeconds : _setTime;
             set => _setTime = value;
+        }
+
+        public void RetrieveAllData()
+        {
+            SendCommand(GetNumServos);
+            SendCommand(GetGlobalVars);
         }
     }
 }

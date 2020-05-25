@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\packages\GitVersionTask.5.1.3\build\GitVersionTask.props" Condition="Exists('..\packages\GitVersionTask.5.1.3\build\GitVersionTask.props')" />
+  <Import Project="..\packages\GitVersionTask.5.3.4\build\GitVersionTask.props" Condition="Exists('..\packages\GitVersionTask.5.3.4\build\GitVersionTask.props')" />
   <Import Project="..\packages\GitVersionTask.5.2.4\build\GitVersionTask.props" Condition="Exists('..\packages\GitVersionTask.5.2.4\build\GitVersionTask.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -75,6 +75,9 @@
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <Prefer32Bit>true</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>pid.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Castle.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=407dd0808d44fbdc, processorArchitecture=MSIL">
@@ -186,6 +189,7 @@
     <Content Include="NLog.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Resource Include="pid.ico" />
     <None Include="NLog.xsd">
       <SubType>Designer</SubType>
     </None>
@@ -216,13 +220,13 @@
     </PropertyGroup>
     <Error Condition="!Exists('..\packages\GitVersionTask.5.2.4\build\GitVersionTask.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\GitVersionTask.5.2.4\build\GitVersionTask.targets'))" />
     <Error Condition="!Exists('..\packages\GitVersionTask.5.2.4\build\GitVersionTask.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\GitVersionTask.5.2.4\build\GitVersionTask.props'))" />
-    <Error Condition="!Exists('..\packages\GitVersionTask.5.1.3\build\GitVersionTask.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\GitVersionTask.5.1.3\build\GitVersionTask.props'))" />
-    <Error Condition="!Exists('..\packages\GitVersionTask.5.1.3\build\GitVersionTask.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\GitVersionTask.5.1.3\build\GitVersionTask.targets'))" />
+    <Error Condition="!Exists('..\packages\GitVersionTask.5.3.4\build\GitVersionTask.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\GitVersionTask.5.3.4\build\GitVersionTask.props'))" />
+    <Error Condition="!Exists('..\packages\GitVersionTask.5.3.4\build\GitVersionTask.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\GitVersionTask.5.3.4\build\GitVersionTask.targets'))" />
   </Target>
   <PropertyGroup>
     <PostBuildEvent>
     </PostBuildEvent>
   </PropertyGroup>
   <Import Project="..\packages\GitVersionTask.5.2.4\build\GitVersionTask.targets" Condition="Exists('..\packages\GitVersionTask.5.2.4\build\GitVersionTask.targets')" />
-  <Import Project="..\packages\GitVersionTask.5.1.3\build\GitVersionTask.targets" Condition="Exists('..\packages\GitVersionTask.5.1.3\build\GitVersionTask.targets')" />
+  <Import Project="..\packages\GitVersionTask.5.3.4\build\GitVersionTask.targets" Condition="Exists('..\packages\GitVersionTask.5.3.4\build\GitVersionTask.targets')" />
 </Project>
