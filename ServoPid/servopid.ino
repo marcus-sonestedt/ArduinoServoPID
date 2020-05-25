@@ -112,6 +112,7 @@ public:
     _max = max;
   }
 
+  [[nodiscard]]
   float read() const
   {
     const auto value = analogRead(_pin);
@@ -357,7 +358,7 @@ void loop()
   maxDt = dt > maxDt ? dt : maxDt;
   minDt = dt < minDt ? dt : minDt;
 
-  if (x++ % 100 == 0)
+  if (x++ % 500 == 0)
   {
     Serial.print(F("DT "));
     Serial.print(dt, 6);
@@ -367,8 +368,8 @@ void loop()
     Serial.print(maxDt, 6);
     Serial.print('\n');
 
-    minDt = 100;
-    maxDt = 0;
+    minDt = 1e6;
+    maxDt = -1;
   }
 
   if (Serial.available())
@@ -486,7 +487,6 @@ void handleSerialCommand()
 
       auto& servoPid = PidServos[int(serialBuf[2])];
       const auto value = floatFromBytes(serialBuf + 4);
-      //Serial.println(value);
 
       switch (ServoParam(serialBuf[3]))
       {
@@ -588,7 +588,6 @@ void handleSerialCommand()
     {
       const auto var = static_cast<GlobalVar>(serialBuf[2]);
       const auto value = floatFromBytes(serialBuf + 3);
-      //Serial.println(value);
 
       switch (var)
       {
@@ -655,12 +654,10 @@ void handleSerialCommand()
       Serial.print(' ');
       Serial.print(PID::MaxIntegratorStore);
       Serial.print(' ');
-      Serial.print(0);
-      Serial.print(' ');
       Serial.print(ServoBase::MinAngle);
       Serial.print(' ');
       Serial.print(ServoBase::MaxAngle);
-      Serial.print('\n');
+      Serial.print(' ');
       Serial.print(Deadband::MaxDeviation);
       Serial.print('\n');
   }
@@ -732,7 +729,24 @@ void initServosFromEeprom()
 template <typename T>
 void eepromPutInc(int& addr, const T value)
 {
-  EEPROM.put(addr, value);
+  auto r = 0;
+  T readBack;
+  for (auto i = 0; i < 4; ++i) {
+    EEPROM.put(addr, value);
+    EEPROM.get(addr, readBack);
+    r = memcmp(&value, &readBack, sizeof(T));
+    if (r == 0)
+      break;
+  }
+
+  if (r != 0) {
+    Serial.print(F("ERR: EEPROM verification failed at addr"));
+    Serial.print(addr);
+    Serial.print(F(" writing "));
+    Serial.print(sizeof(T));
+    Serial.print(F(" byte(s).\n"));
+  }
+
   addr += sizeof(T);
 }
 
@@ -758,7 +772,7 @@ bool loadEeprom()
     Serial.print(computedCrc);
     Serial.print(F(" vs computed: "));
     Serial.print(storedCrc);
-    Serial.println(' ');
+    Serial.print('\n');
     return false;
   }
 
