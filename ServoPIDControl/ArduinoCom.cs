@@ -1,10 +1,13 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO.Ports;
 using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
 using NLog;
@@ -21,8 +24,9 @@ namespace ServoPIDControl
     {
         // ReSharper disable once UnusedMember.Global
         NoOp = 0,
-        SetServoParamFloat,
-        EnableRegulator,
+        SetServoParamFloat ,
+        // ReSharper disable once InconsistentNaming
+        _EnableRegulator, // deprecated
         GetNumServos,
         GetServoParams,
         GetServoData,
@@ -52,7 +56,8 @@ namespace ServoPIDControl
         NumServos,
         PidEnabled,
         PidMaxIntegratorStore,
-        AnalogInputRange,  // not used
+        // ReSharper disable once InconsistentNaming
+        _AnalogInputRange,  // deprecated
         ServoMinAngle,
         ServoMaxAngle,
         DeadbandMaxDeviation
@@ -70,9 +75,13 @@ namespace ServoPIDControl
 
         private ISerialPort _port;
         private AppModel _model;
+
         private readonly StringBuilder _readBuf = new StringBuilder();
         private readonly DispatcherTimer _timer = new DispatcherTimer {Interval = TimeSpan.FromMilliseconds(50)};
         private readonly object _portLock = new object();
+        private readonly ConcurrentQueue<byte[]> _cmdQueue = new ConcurrentQueue<byte[]>();
+        private readonly CancellationTokenSource _quitCts = new CancellationTokenSource();
+
         private bool _updatingGlobalVarsFromArduino;
         private float _setTime;
         private volatile bool _gettingServoData;
@@ -81,6 +90,7 @@ namespace ServoPIDControl
         {
             _timer.Tick += TimerOnTick;
             _timer.Start();
+            StartSendDataLoop();
         }
 
         private void TimerOnTick(object sender, EventArgs e)
@@ -388,8 +398,9 @@ namespace ServoPIDControl
 
         private void ModelOnPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == null || e.PropertyName == nameof(Model.PidEnabled))
-                SendCommand(EnableRegulator, (byte) (Model.PidEnabled ? 1 : 0));
+            if (e.PropertyName == null || e.PropertyName == nameof(Model.PidEnabled)) {
+                //SendCommand(EnableRegulator, (byte) (Model.PidEnabled ? 1 : 0));
+            }
 
             if (e.PropertyName == null || e.PropertyName == nameof(Model.ConnectedPort))
                 ConnectPort();
@@ -401,17 +412,42 @@ namespace ServoPIDControl
         public void SendCommand(Command cmd, params byte[] data)
         {
             var cmdData = new[] {(byte) (data.Length + 2), (byte) cmd}.Concat(data).ToArray();
+            _cmdQueue.Enqueue(cmdData);
+        }
 
-            lock (_portLock)
+        private void StartSendDataLoop()
+        {
+            Task.Run(async () =>
             {
-                if (_port == null || !_port.IsOpen)
-                    return;
+                Log.Debug("Enter send data loop");
 
-                if (cmd != GetServoData)
-                    Log.Debug($"Sending {cmdData.Length}: {BitConverter.ToString(cmdData)}");
+                while (!_quitCts.IsCancellationRequested)
+                {
+                    while (_port != null)
+                    {
+                        lock (_portLock)
+                        {
+                            if (!_port.IsOpen)
+                                break;
 
-                _port.Write(cmdData, 0, cmdData.Length);
-            }
+                            if (!_cmdQueue.TryDequeue(out var data))
+                                break;
+
+                            if (data[1] != (byte) GetServoData)
+                                Log.Debug($"Sending {data[0]}: {BitConverter.ToString(data)}");
+
+                            _port.Write(data, 0, data.Length);
+                        }
+
+                        _quitCts.Token.ThrowIfCancellationRequested();
+                        await Task.Delay(15);
+                    }
+
+                    await Task.Delay(500, _quitCts.Token);
+                }
+
+                Log.Debug("Exit send data loop");
+            });
         }
 
         private void SendServoParam(int servoId, ServoParam servoParam, float value)
@@ -498,6 +534,7 @@ namespace ServoPIDControl
 
         public void Dispose()
         {
+            _quitCts.Cancel();
             _port?.Dispose();
             _port = null;
             Model = null;

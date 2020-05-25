@@ -216,7 +216,6 @@ namespace ServoPIDControl
             }
         }
 
-
         private void LoadButton_Click(object sender, RoutedEventArgs e)
         {
             _arduinoCom.SendCommand(Command.LoadEeprom);
@@ -241,7 +240,6 @@ namespace ServoPIDControl
         /// <inheritdoc />
         public void Dispose()
         {
-            GC.SuppressFinalize(this);
             _arduinoCom?.Dispose();
             Model?.Dispose();
         }

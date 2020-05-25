@@ -253,6 +253,8 @@ public:
   static bool enabled;
 
   PidServo() = default;
+  PidServo(const PidServo&) = default;
+  PidServo& operator=(const PidServo&) = default;
 
   PidServo(uint8_t servoPin, uint16_t servoMin, uint16_t servoMax, PID pid, AnalogPin analogPin)
   {
@@ -477,21 +479,29 @@ void handleSerialCommand()
     // len, cmd, pid#, param-id, float-value[4]
   case Command::SetServoParamFloat:
     {
-      if (serialBuf[2] >= numServos)
+      const auto i = int(serialBuf[2]);
+    
+      if (i >= numServos)
       {
         Serial.print(F("ERR: Invalid servo number "));
-        Serial.print(int(serialBuf[2]));
+        Serial.print(i);
         Serial.print('\n');
         return;
       }
 
-      auto& servoPid = PidServos[int(serialBuf[2])];
+      auto& servoPid = PidServos[i];
       const auto value = floatFromBytes(serialBuf + 4);
+
+      Serial.print(F("LOG: Servo "));
+      Serial.print(i);
+      Serial.print(" P: ");
+      Serial.println(value);
 
       switch (ServoParam(serialBuf[3]))
       {
-      case ServoParam::P: 
+      case ServoParam::P:
         servoPid._pid._pFactor = value;
+        servoPid.reset();
         break;
 
       case ServoParam::I: 
@@ -791,9 +801,21 @@ bool loadEeprom()
   Serial.print(numServos);
   Serial.println(F(" servo(s)."));
 
+  if (numServos >= MAX_PID_SERVOS) {
+    Serial.println(F("ERR: Num servos too large in EEPROM?!"));
+    numServos = MAX_PID_SERVOS;
+  }
+
   for (auto i = 0; i < numServos; ++i) {
-    eepromGetInc(addr, PidServos[i]);
-    PidServos[i].reset();
+    auto& pidServo = PidServos[i];
+    eepromGetInc(addr, pidServo);
+    Serial.print(F("LOG: Servo "));
+    Serial.print(i);
+    Serial.print(" P: ");
+    Serial.print(pidServo._pid._pFactor);
+    pidServo.reset();
+    Serial.print(" P2: ");
+    Serial.println(pidServo._pid._pFactor);
   }
 
   return true;
@@ -813,9 +835,17 @@ void saveEeprom()
   eepromPutInc(addr, Deadband::MaxDeviation);
 
   for (auto i = 0; i < numServos; ++i) {
-    auto saveData = PidServos[i];
-    saveData.reset();
-    eepromPutInc(addr, saveData);
+    auto pidServo = PidServos[i];
+    Serial.print(F("LOG: Servo "));
+    Serial.print(i);
+    Serial.print(" P0: ");
+    Serial.print(PidServos[i]._pid._pFactor);
+    Serial.print(" P1: ");
+    Serial.print(pidServo._pid._pFactor);
+    pidServo.reset();
+    Serial.print(" P2: ");
+    Serial.println(pidServo._pid._pFactor);
+    eepromPutInc(addr, pidServo);
   }
 
   // clear remaining memory (update -> write if not already zero)
